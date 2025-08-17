@@ -1,14 +1,6 @@
 import ballerina/http;
 import ballerina/time;
 
-# Rate limiter configuration
-public type RateLimitConfig record {|
-    # Time window in milliseconds
-    int windowMs;
-    # Maximum requests per window
-    int maxRequests;
-|};
-
 # Rate limiter entry
 type RateLimitEntry record {|
     int requestCount;
@@ -109,60 +101,6 @@ public class RateLimiter {
         }
 
         return self.config.windowMs - windowElapsed;
-    }
-}
-
-# Rate limiter service interceptor
-public service class RateLimiterInterceptor {
-    *http:ResponseInterceptor;
-
-    private RateLimiter rateLimiter;
-
-    public function init(RateLimitConfig config) {
-        self.rateLimiter = new (config);
-    }
-
-    public function interceptResponse(http:RequestContext ctx, http:Response res) returns http:NextService|error? {
-        return ctx.next();
-    }
-}
-
-# Rate limiter request service interceptor
-public service class RateLimiterRequestInterceptor {
-    *http:RequestInterceptor;
-
-    private RateLimiter rateLimiter;
-
-    public function init(RateLimitConfig config) {
-        self.rateLimiter = new (config);
-    }
-
-    public function interceptRequest(http:RequestContext ctx, http:Request req) returns http:NextService|error? {
-        string clientIp = getClientIp(req);
-
-        if !self.rateLimiter.isAllowed(clientIp) {
-            http:Response response = new;
-            response.statusCode = 429;
-            response.setTextPayload("Too Many Requests");
-            response.setHeader("Retry-After", self.rateLimiter.getTimeUntilReset(clientIp).toString());
-            response.setHeader("X-RateLimit-Limit", self.rateLimiter.config.maxRequests.toString());
-            response.setHeader("X-RateLimit-Remaining", "0");
-            response.setHeader("X-RateLimit-Reset", self.rateLimiter.getTimeUntilReset(clientIp).toString());
-
-            ctx.respond(response);
-            return;
-        }
-
-        // Add rate limit headers to response context
-        int remaining = self.rateLimiter.getRemainingRequests(clientIp);
-        int resetTime = self.rateLimiter.getTimeUntilReset(clientIp);
-
-        // Store headers in context for later use
-        ctx.set("X-RateLimit-Limit", self.rateLimiter.config.maxRequests.toString());
-        ctx.set("X-RateLimit-Remaining", remaining.toString());
-        ctx.set("X-RateLimit-Reset", resetTime.toString());
-
-        return ctx.next();
     }
 }
 

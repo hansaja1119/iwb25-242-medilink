@@ -29,7 +29,7 @@ type KafkaConfig record {|
     string consumerGroup;
 |};
 
-type ServiceUrls record {|
+public type ServiceUrls record {|
     # User service URL
     string userService;
     # Appointment service URL
@@ -38,7 +38,7 @@ type ServiceUrls record {|
     string labReportService;
 |};
 
-type RateLimitConfig record {|
+public type RateLimitConfig record {|
     # Rate limit time window in milliseconds
     int windowMs;
     # Maximum requests per window
@@ -61,6 +61,22 @@ type Config record {|
 # Global configuration
 Config appConfig = loadConfig();
 
+# Log startup information
+function init() {
+    log:printInfo("=================================================");
+    log:printInfo("         MediLink API Gateway Starting          ");
+    log:printInfo("=================================================");
+    log:printInfo(string `Host: ${appConfig.app.host}`);
+    log:printInfo(string `Port: ${appConfig.app.port}`);
+    log:printInfo(string `Log Level: ${appConfig.app.logLevel}`);
+    log:printInfo("Available endpoints:");
+    log:printInfo(string `  - Health: http://${appConfig.app.host}:${appConfig.app.port}/api/health`);
+    log:printInfo(string `  - Reports: http://${appConfig.app.host}:${appConfig.app.port}/api/reports/*`);
+    log:printInfo("=================================================");
+    log:printInfo("API Gateway is ready to accept requests!");
+    log:printInfo("=================================================");
+}
+
 # Main API Gateway service
 @http:ServiceConfig {
     cors: {
@@ -75,6 +91,7 @@ service /api on new http:Listener(appConfig.app.port, config = {host: appConfig.
     # Health check endpoint
     # + return - Health status response
     resource function get health() returns json {
+        log:printInfo("Health check endpoint accessed");
         return {
             "status": "OK",
             "service": "API Gateway",

@@ -1,1 +1,26 @@
+# Environment files
 .env
+
+# Ballerina build artifacts
+target/
+*.jar
+*.class
+
+# Ballerina generated files
+Dependencies.toml
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
