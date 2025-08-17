@@ -1,0 +1,48 @@
+[package]
+org = "medilink"
+name = "api_gateway"
+version = "0.1.0"
+distribution = "2201.10.0"
+
+[build-options]
+observabilityIncluded = true
+
+[[dependency]]
+org = "ballerina"
+name = "http"
+version = "2.12.0"
+
+[[dependency]]
+org = "ballerina"
+name = "redis"
+version = "3.0.0"
+
+[[dependency]]
+org = "ballerina"
+name = "kafka"
+version = "4.1.0"
+
+[[dependency]]
+org = "ballerina"
+name = "log"
+version = "2.12.0"
+
+[[dependency]]
+org = "ballerina"
+name = "jwt"
+version = "2.12.0"
+
+[[dependency]]
+org = "ballerina"
+name = "auth"
+version = "2.12.0"
+
+[[dependency]]
+org = "ballerina"
+name = "time"
+version = "2.5.0"
+
+[[dependency]]
+org = "ballerina"
+name = "uuid"
+version = "1.8.1"

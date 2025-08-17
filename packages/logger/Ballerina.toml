@@ -1,0 +1,15 @@
+[package]
+org = "medilink.packages"
+name = "logger"
+version = "0.1.0"
+distribution = "2201.10.0"
+
+[[dependency]]
+org = "ballerina"
+name = "log"
+version = "2.12.0"
+
+[[dependency]]
+org = "ballerina"
+name = "time"
+version = "2.5.0"

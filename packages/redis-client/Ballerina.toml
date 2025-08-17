@@ -1,0 +1,15 @@
+[package]
+org = "medilink.packages"
+name = "redis_client"
+version = "0.1.0"
+distribution = "2201.10.0"
+
+[[dependency]]
+org = "ballerina"
+name = "redis"
+version = "3.0.0"
+
+[[dependency]]
+org = "ballerina"
+name = "log"
+version = "2.12.0"
