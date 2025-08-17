@@ -100,6 +100,14 @@ service /api on new http:Listener(appConfig.app.port, config = {host: appConfig.
     }
 
     # User service routes
+    # Base users route
+    # + req - HTTP request
+    # + return - HTTP response from user service
+    resource function 'default users(http:Request req) returns http:Response|error {
+        return check forwardToService("user", "/users", req);
+    }
+
+    # User service routes with path
     # + path - Path parameters
     # + req - HTTP request
     # + return - HTTP response from user service
@@ -108,6 +116,14 @@ service /api on new http:Listener(appConfig.app.port, config = {host: appConfig.
     }
 
     # Appointment service routes
+    # Base appointments route
+    # + req - HTTP request
+    # + return - HTTP response from appointment service
+    resource function 'default appointments(http:Request req) returns http:Response|error {
+        return check forwardToService("appointment", "/appointments", req);
+    }
+
+    # Appointment service routes with path
     # + path - Path parameters
     # + req - HTTP request
     # + return - HTTP response from appointment service
@@ -116,6 +132,14 @@ service /api on new http:Listener(appConfig.app.port, config = {host: appConfig.
     }
 
     # Lab report service routes
+    # Base reports route
+    # + req - HTTP request
+    # + return - HTTP response from lab report service
+    resource function 'default reports(http:Request req) returns http:Response|error {
+        return check forwardToService("labReport", "/reports", req);
+    }
+
+    # Lab report service routes with path
     # + path - Path parameters
     # + req - HTTP request
     # + return - HTTP response from lab report service
@@ -146,10 +170,13 @@ service /api on new http:Listener(appConfig.app.port, config = {host: appConfig.
 # + return - HTTP response from the target service
 function forwardToService(string serviceName, string path, http:Request request) returns http:Response|error {
 
+    string serviceUrl = getServiceUrl(serviceName);
     log:printInfo(string `Forwarding ${request.method} ${path} to ${serviceName} service`);
+    log:printInfo(string `Service URL: ${serviceUrl}`);
+    log:printInfo(string `Full request URL will be: ${serviceUrl}${path}`);
 
     // Create HTTP client for the service
-    http:Client serviceClient = check new (getServiceUrl(serviceName));
+    http:Client serviceClient = check new (serviceUrl);
 
     // Forward the request based on method
     if request.method == "GET" {
