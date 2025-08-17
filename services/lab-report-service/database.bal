@@ -12,9 +12,9 @@ public function initDatabase() returns error? {
     postgresql:Client|sql:Error dbResult = new (
         host = "localhost",
         port = 5432,
-        database = "medilink_v2",
-        username = "postgres",
-        password = ""
+        database = "medilink",
+        username = "admin",
+        password = "medilink"
     );
 
     if dbResult is sql:Error {
@@ -158,6 +158,7 @@ function createTables() returns error? {
 }
 
 # Close database connection
+# + return - Error if database close operation fails, otherwise nil
 public function closeDatabase() returns error? {
     postgresql:Client? dbClientInstance = dbClient;
     if dbClientInstance is postgresql:Client {

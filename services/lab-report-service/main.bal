@@ -1,81 +1,30 @@
 import ballerina/http;
 import ballerina/log;
-import ballerina/os;
 import ballerina/time;
-import ballerina/uuid;
 
-# Configuration types
-type AppConfig record {|
-    # Service host address
-    string host;
-    # Service port number
-    int port;
-    # Application log level
-    string logLevel;
-|};
+// Configuration
+configurable int servicePort = 3004;
 
-type DatabaseConfig record {|
-    # Database host
-    string host;
-    # Database port
-    int port;
-    # Database name
-    string name;
-    # Database username
-    string username;
-    # Database password
-    string password;
-|};
-
-type RedisConfig record {|
-    # Redis server host
-    string host;
-    # Redis server port
-    int port;
-    # Redis server password
-    string password;
-|};
-
-type KafkaConfig record {|
-    # Kafka bootstrap servers
-    string bootstrapServers;
-    # Kafka consumer group ID
-    string consumerGroup;
-|};
-
-type Config record {|
-    # Application configuration
-    AppConfig app;
-    # Database configuration
-    DatabaseConfig database;
-    # Redis configuration
-    RedisConfig redis;
-    # Kafka configuration
-    KafkaConfig kafka;
-|};
-
-# Global configuration
-Config appConfig = loadConfig();
-
-# Service initialization
+# Log startup information
 function init() {
     log:printInfo("=================================================");
-    log:printInfo("      MediLink Lab Report Service Starting      ");
+    log:printInfo("        MediLink Lab Report Service Starting     ");
     log:printInfo("=================================================");
-    log:printInfo(string `Host: ${appConfig.app.host}`);
-    log:printInfo(string `Port: ${appConfig.app.port}`);
-    log:printInfo(string `Log Level: ${appConfig.app.logLevel}`);
+    log:printInfo(string `Port: ${servicePort}`);
     log:printInfo("Available endpoints:");
-    log:printInfo(string `  - Health: http://${appConfig.app.host}:${appConfig.app.port}/health`);
-    log:printInfo(string `  - Reports: http://${appConfig.app.host}:${appConfig.app.port}/reports/*`);
-    log:printInfo(string `  - Templates: http://${appConfig.app.host}:${appConfig.app.port}/templates/*`);
-    log:printInfo(string `  - Workflow: http://${appConfig.app.host}:${appConfig.app.port}/workflow/*`);
+    log:printInfo(string `  - Health: http://localhost:${servicePort}/health`);
+    log:printInfo(string `  - Test Types: http://localhost:${servicePort}/testtypes`);
+    log:printInfo(string `  - Lab Samples: http://localhost:${servicePort}/samples`);
+    log:printInfo(string `  - Lab Results: http://localhost:${servicePort}/results`);
+    log:printInfo(string `  - Lab Reports: http://localhost:${servicePort}/reports`);
+    log:printInfo(string `  - Templates: http://localhost:${servicePort}/templates`);
+    log:printInfo(string `  - Workflows: http://localhost:${servicePort}/workflows`);
     log:printInfo("=================================================");
     log:printInfo("Lab Report Service is ready to accept requests!");
     log:printInfo("=================================================");
 }
 
-# Main Lab Report Service
+// Service definition
 @http:ServiceConfig {
     cors: {
         allowOrigins: ["*"],
@@ -84,190 +33,239 @@ function init() {
         allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     }
 }
-service / on new http:Listener(appConfig.app.port, config = {host: appConfig.app.host}) {
+service / on new http:Listener(servicePort) {
 
-    # Health check endpoint
-    # + return - Health status response
+    // Health check endpoint
     resource function get health() returns json {
-        log:printInfo("Health check endpoint accessed");
         return {
-            "status": "OK",
-            "service": "Lab Report Service",
+            "status": "healthy",
+            "service": "lab-report-service",
             "timestamp": time:utcToString(time:utcNow()),
-            "version": "0.1.0"
+            "version": "1.0.0"
         };
     }
 
-    # Reports endpoints
-    # + return - Reports response
-    resource function get reports() returns json|error {
-        log:printInfo("GET /reports - List all reports");
+    // Test Types endpoints
+    resource function get testtypes() returns TestType[]|error {
+        return testTypeService.getAllTestTypes();
+    }
+
+    resource function post testtypes(@http:Payload TestType testTypeData) returns TestType|error {
+        return testTypeService.createTestType(testTypeData);
+    }
+
+    // resource function get testtypes/[string id]() returns TestType|error {
+    //     return testTypeService.getTestType(id);
+    // }
+
+    resource function put testtypes/[string id](@http:Payload TestType updateData) returns TestType|error {
+        return testTypeService.updateTestType(id, updateData);
+    }
+
+    resource function delete testtypes/[string id]() returns json|error {
+        check testTypeService.deleteTestType(id);
+        return {"message": "Test type deleted successfully"};
+    }
+
+    // Lab Samples endpoints
+    resource function get samples() returns LabSample[]|error {
+        return labSampleService.getAllSamples();
+    }
+
+    resource function post samples(@http:Payload LabSampleCreate sampleData) returns LabSample|error {
+        return labSampleService.createSample(sampleData);
+    }
+
+    resource function get samples/[string id]() returns LabSample|error {
+        return labSampleService.getSample(id);
+    }
+
+    resource function get samples/patient/[string patientId]() returns LabSample[]|error {
+        return labSampleService.getSamplesByPatient(patientId);
+    }
+
+    resource function get samples/status/[string status]() returns LabSample[]|error {
+        return labSampleService.getSamplesByStatus(status);
+    }
+
+    resource function put samples/[string id]/status(@http:Payload json statusData) returns LabSample|error {
+        json statusValue = check statusData.status;
+        string status = statusValue is string ? statusValue : "";
+        json notesValue = check statusData.notes;
+        string? notes = notesValue is string ? notesValue : ();
+        return labSampleService.updateSampleStatus(id, status, notes);
+    }
+
+    resource function put samples/[string id]/process(@http:Payload json processData) returns LabSample|error {
+        json processedByValue = check processData.processedBy;
+        string processedBy = processedByValue is string ? processedByValue : "";
+        return labSampleService.processSample(id, processedBy);
+    }
+
+    resource function put samples/[string id]/complete(@http:Payload LabResultCreate resultData) returns LabResult|error {
+        return labSampleService.completeSample(id, resultData);
+    }
+
+    resource function get samples/[string id]/results() returns json|error {
+        return labSampleService.getSampleWithResults(id);
+    }
+
+    resource function delete samples/[string id]() returns json|error {
+        check labSampleService.deleteSample(id);
+        return {"message": "Sample deleted successfully"};
+    }
+
+    resource function get samples/stats() returns json|error {
+        return labSampleService.getSampleStats();
+    }
+
+    // Lab Results endpoints
+    resource function get results() returns LabResult[]|error {
+        return labResultService.getAllResults();
+    }
+
+    resource function post results(@http:Payload LabResultCreate resultData) returns LabResult|error {
+        return labResultService.createResult(resultData);
+    }
+
+    resource function get results/[string id]() returns LabResult|error {
+        return labResultService.getResult(id);
+    }
+
+    resource function get results/sample/[string sampleId]() returns LabResult[]|error {
+        return labResultService.getResultsBySample(sampleId);
+    }
+
+    resource function get results/status/[string status]() returns LabResult[]|error {
+        return labResultService.getResultsByStatus(status);
+    }
+
+    resource function put results/[string id](@http:Payload LabResultUpdate updateData) returns LabResult|error {
+        return labResultService.updateResult(id, updateData);
+    }
+
+    resource function put results/[string id]/review(@http:Payload json reviewData) returns LabResult|error {
+        json reviewedByValue = check reviewData.reviewedBy;
+        string reviewedBy = reviewedByValue is string ? reviewedByValue : "";
+        json notesValue = check reviewData.notes;
+        string? notes = notesValue is string ? notesValue : ();
+        return labResultService.reviewResult(id, reviewedBy, notes);
+    }
+
+    resource function get results/stats() returns json|error {
+        return labResultService.getResultStats();
+    }
+
+    // Lab Reports endpoints
+    resource function get reports() returns LabReport[]|error {
+        return labResultService.getAllReports();
+    }
+
+    resource function post reports/generate(@http:Payload json reportRequest) returns LabReport|error {
+        json sampleIdValue = check reportRequest.sampleId;
+        string sampleId = sampleIdValue is string ? sampleIdValue : "";
+        json templateIdValue = check reportRequest.templateId;
+        string? templateId = templateIdValue is string ? templateIdValue : ();
+        json generatedByValue = check reportRequest.generatedBy;
+        string? generatedBy = generatedByValue is string ? generatedByValue : ();
+        return labResultService.generateReport(sampleId, templateId, generatedBy);
+    }
+
+    resource function get reports/[string id]() returns LabReport|error {
+        return labResultService.getReport(id);
+    }
+
+    resource function get reports/sample/[string sampleId]() returns LabReport[]|error {
+        return labResultService.getReportsBySample(sampleId);
+    }
+
+    resource function put reports/[string id]/finalize(@http:Payload json finalizeData) returns LabReport|error {
+        json finalizedByValue = check finalizeData.finalizedBy;
+        string finalizedBy = finalizedByValue is string ? finalizedByValue : "";
+        return labResultService.finalizeReport(id, finalizedBy);
+    }
+
+    // Templates endpoints
+    resource function get templates() returns ReportTemplate[]|error {
+        return templateService.getAllTemplates();
+    }
+
+    resource function get templates/active() returns ReportTemplate[]|error {
+        return templateService.getActiveTemplates();
+    }
+
+    resource function post templates(@http:Payload ReportTemplateCreate templateData) returns ReportTemplate|error {
+        return templateService.createTemplate(templateData);
+    }
+
+    resource function get templates/[string id]() returns ReportTemplate|error {
+        return templateService.getTemplate(id);
+    }
+
+    resource function get templates/testtype/[string testTypeId]() returns ReportTemplate[]|error {
+        return templateService.getTemplatesByTestType(testTypeId);
+    }
+
+    resource function put templates/[string id](@http:Payload ReportTemplateUpdate updateData) returns ReportTemplate|error {
+        return templateService.updateTemplate(id, updateData);
+    }
+
+    resource function put templates/[string id]/activate() returns ReportTemplate|error {
+        return templateService.activateTemplate(id);
+    }
+
+    resource function put templates/[string id]/deactivate() returns ReportTemplate|error {
+        return templateService.deactivateTemplate(id);
+    }
+
+    resource function post templates/[string id]/generate(@http:Payload json generateRequest) returns json|error {
+        // This would require result data in the request
+        LabResult[] resultData = []; // Placeholder - in real implementation, get from request
+        return templateService.generateReportFromTemplate(id, resultData);
+    }
+
+    resource function get templates/stats() returns json|error {
+        return templateService.getTemplateStats();
+    }
+
+    // Workflow endpoints
+    resource function get workflows/active() returns WorkflowStatus[]|error {
+        return labWorkflowService.getActiveWorkflows();
+    }
+
+    resource function get workflows/[string id]() returns WorkflowStatus|error {
+        return labWorkflowService.getWorkflowStatus(id);
+    }
+
+    resource function post workflows/[string id]/process() returns json|error {
+        check labWorkflowService.processNextStep(id);
+        return {"message": "Workflow step processed"};
+    }
+
+    resource function put workflows/[string id]/step/[int stepIndex]/complete(@http:Payload json stepData) returns json|error {
+        json resultValue = check stepData.result;
+        check labWorkflowService.completeStep(id, stepIndex, resultValue);
+        return {"message": "Workflow step completed"};
+    }
+
+    // resource function put workflows/[string id]/step/[int stepIndex]/fail(@http:Payload json failData) returns json|error {
+    //     json errorValue = check failData.errorMessage;
+    //     string errorMessage = errorValue is string ? errorValue : "";
+    //     check labWorkflowService.failStep(id, stepIndex, errorMessage);
+    //     return {"message": "Workflow step failed"};
+    // }
+
+    resource function get workflows/stats() returns json|error {
+        return labWorkflowService.getWorkflowStats();
+    }
+
+    // Legacy endpoints for compatibility with API Gateway expectations
+    resource function get workflow() returns json {
         return {
-            "message": "List all lab reports",
-            "data": [],
+            "message": "Workflow endpoint",
+            "status": "operational",
+            "activeWorkflows": labWorkflowService.getActiveWorkflows().length(),
             "timestamp": time:utcToString(time:utcNow())
         };
     }
-
-    # Get specific report
-    # + reportId - Report ID
-    # + return - Report response
-    resource function get reports/[string reportId]() returns json|error {
-        log:printInfo(string `GET /reports/${reportId} - Get specific report`);
-        return {
-            "message": string `Get report ${reportId}`,
-            "data": {
-                "id": reportId,
-                "status": "pending",
-                "createdAt": time:utcToString(time:utcNow())
-            },
-            "timestamp": time:utcToString(time:utcNow())
-        };
-    }
-
-    # Create new report
-    # + request - HTTP request with report data
-    # + return - Created report response
-    resource function post reports(http:Request request) returns json|error {
-        log:printInfo("POST /reports - Create new report");
-        json|error payload = request.getJsonPayload();
-        if payload is error {
-            return {
-                "error": "Invalid JSON payload",
-                "timestamp": time:utcToString(time:utcNow())
-            };
-        }
-
-        string reportId = uuid:createType1AsString();
-        return {
-            "message": "Report created successfully",
-            "data": {
-                "id": reportId,
-                "status": "created",
-                "payload": payload,
-                "createdAt": time:utcToString(time:utcNow())
-            },
-            "timestamp": time:utcToString(time:utcNow())
-        };
-    }
-
-    # Templates endpoints
-    # + return - Templates response
-    resource function get templates() returns json|error {
-        log:printInfo("GET /templates - List all templates");
-        return {
-            "message": "List all lab report templates",
-            "data": [],
-            "timestamp": time:utcToString(time:utcNow())
-        };
-    }
-
-    # Workflow endpoints
-    # + return - Workflow response
-    resource function get workflow() returns json|error {
-        log:printInfo("GET /workflow - Get workflow status");
-        return {
-            "message": "Lab workflow status",
-            "data": {
-                "activeWorkflows": 0,
-                "pendingReports": 0,
-                "completedReports": 0
-            },
-            "timestamp": time:utcToString(time:utcNow())
-        };
-    }
-
-    # Start workflow
-    # + request - HTTP request with workflow data
-    # + return - Workflow response
-    resource function post workflow(http:Request request) returns json|error {
-        log:printInfo("POST /workflow - Start new workflow");
-        json|error payload = request.getJsonPayload();
-        if payload is error {
-            return {
-                "error": "Invalid JSON payload",
-                "timestamp": time:utcToString(time:utcNow())
-            };
-        }
-
-        string workflowId = uuid:createType1AsString();
-        return {
-            "message": "Workflow started successfully",
-            "data": {
-                "workflowId": workflowId,
-                "status": "started",
-                "payload": payload,
-                "startedAt": time:utcToString(time:utcNow())
-            },
-            "timestamp": time:utcToString(time:utcNow())
-        };
-    }
-
-    # Default route for unhandled paths
-    # + path - Path parameters
-    # + req - HTTP request
-    # + return - 404 error response
-    resource function 'default [string... path](http:Request req) returns http:Response|error {
-        log:printInfo(string `404 - Route not found: ${string:'join("/", ...path)}`);
-        http:Response response = new;
-        response.statusCode = 404;
-        response.setJsonPayload({
-            "error": "Not Found",
-            "message": string `Route not found: ${string:'join("/", ...path)}`,
-            "timestamp": time:utcToString(time:utcNow())
-        });
-        return response;
-    }
-}
-
-# Load configuration from environment variables
-# + return - Application configuration
-function loadConfig() returns Config {
-    return {
-        app: {
-            host: getEnvVar("LAB_REPORT_SERVICE_HOST", "0.0.0.0"),
-            port: getIntEnvVar("LAB_REPORT_SERVICE_PORT", 3100),
-            logLevel: getEnvVar("LOG_LEVEL", "INFO")
-        },
-        database: {
-            host: getEnvVar("DB_HOST", "localhost"),
-            port: getIntEnvVar("DB_PORT", 5432),
-            name: getEnvVar("DB_NAME", "medilink_lab"),
-            username: getEnvVar("DB_USERNAME", "postgres"),
-            password: getEnvVar("DB_PASSWORD", "")
-        },
-        redis: {
-            host: getEnvVar("REDIS_HOST", "localhost"),
-            port: getIntEnvVar("REDIS_PORT", 6379),
-            password: getEnvVar("REDIS_PASSWORD", "")
-        },
-        kafka: {
-            bootstrapServers: getEnvVar("KAFKA_BOOTSTRAP_SERVERS", "localhost:9094"),
-            consumerGroup: getEnvVar("KAFKA_CONSUMER_GROUP", "lab-report-service")
-        }
-    };
-}
-
-# Helper function to get environment variable with default
-# + key - Environment variable key
-# + defaultValue - Default value if environment variable is not set
-# + return - Environment variable value or default value
-function getEnvVar(string key, string defaultValue) returns string {
-    string? value = os:getEnv(key);
-    return value is string ? value : defaultValue;
-}
-
-# Helper function to get integer environment variable with default
-# + key - Environment variable key
-# + defaultValue - Default integer value if environment variable is not set or invalid
-# + return - Environment variable value as integer or default value
-function getIntEnvVar(string key, int defaultValue) returns int {
-    string? value = os:getEnv(key);
-    if value is string && value.trim() != "" {
-        int|error intValue = int:fromString(value);
-        if intValue is int {
-            return intValue;
-        }
-    }
-    return defaultValue;
 }
