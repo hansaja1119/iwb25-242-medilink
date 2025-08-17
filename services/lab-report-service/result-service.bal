@@ -6,17 +6,17 @@ import ballerina/uuid;
 public class LabResultService {
 
     # In-memory storage for demo purposes (replace with database later)
-    private map<LabResult> results = {};
+    private map<FullLabResult> results = {};
     private map<LabReport> reports = {};
 
     # Create a new lab result
     # + resultData - Result data without ID
     # + return - Created result or error
-    public function createResult(LabResultCreate resultData) returns LabResult|error {
+    public function createResult(LabResultCreate resultData) returns FullLabResult|error {
         string resultId = uuid:createType1AsString();
         string timestamp = time:utcToString(time:utcNow());
 
-        LabResult result = {
+        FullLabResult result = {
             id: resultId,
             sampleId: <string>resultData["sampleId"],
             testTypeId: <string>resultData["testTypeId"],
@@ -43,9 +43,9 @@ public class LabResultService {
     # Get result by ID
     # + resultId - Result ID
     # + return - Result or error
-    public function getResult(string resultId) returns LabResult|error {
-        LabResult? result = self.results[resultId];
-        if result is LabResult {
+    public function getResult(string resultId) returns FullLabResult|error {
+        FullLabResult? result = self.results[resultId];
+        if result is FullLabResult {
             return result;
         }
         return error("Result not found");
@@ -54,9 +54,9 @@ public class LabResultService {
     # Get results by sample ID
     # + sampleId - Sample ID
     # + return - Array of results
-    public function getResultsBySample(string sampleId) returns LabResult[] {
-        LabResult[] sampleResults = [];
-        foreach LabResult result in self.results {
+    public function getResultsBySample(string sampleId) returns FullLabResult[] {
+        FullLabResult[] sampleResults = [];
+        foreach FullLabResult result in self.results {
             if result.sampleId == sampleId {
                 sampleResults.push(result);
             }
@@ -68,31 +68,31 @@ public class LabResultService {
     # + resultId - Result ID
     # + updateData - Update data
     # + return - Updated result or error
-    public function updateResult(string resultId, LabResultUpdate updateData) returns LabResult|error {
-        LabResult? result = self.results[resultId];
+    public function updateResult(string resultId, LabResultUpdate updateData) returns FullLabResult|error {
+        FullLabResult? result = self.results[resultId];
         if result is () {
             return error("Result not found");
         }
 
         // Update fields if provided
-        if updateData.results is json {
-            result["results"] = updateData.results;
+        if updateData?.results is json {
+            result.results = updateData?.results;
         }
 
-        if updateData.normalRanges is json {
-            result["normalRanges"] = updateData.normalRanges;
+        if updateData?.normalRanges is json {
+            result["normalRanges"] = updateData?.normalRanges;
         }
 
-        if updateData.status is string {
-            result.status = <string>updateData.status;
+        if updateData?.status is string {
+            result.status = <string>updateData?.status;
         }
 
-        if updateData.reviewedBy is string {
-            result["reviewedBy"] = updateData.reviewedBy;
+        if updateData?.reviewedBy is string {
+            result["reviewedBy"] = updateData?.reviewedBy;
         }
 
-        if updateData.notes is string {
-            result["notes"] = updateData.notes;
+        if updateData?.notes is string {
+            result["notes"] = updateData?.notes;
         }
 
         result.updatedAt = time:utcToString(time:utcNow());
@@ -109,8 +109,8 @@ public class LabResultService {
     # + reviewedBy - Reviewer name
     # + notes - Review notes
     # + return - Updated result or error
-    public function reviewResult(string resultId, string reviewedBy, string? notes = ()) returns LabResult|error {
-        LabResult? result = self.results[resultId];
+    public function reviewResult(string resultId, string reviewedBy, string? notes = ()) returns FullLabResult|error {
+        FullLabResult? result = self.results[resultId];
         if result is () {
             return error("Result not found");
         }
@@ -139,14 +139,14 @@ public class LabResultService {
     # + return - Generated report or error
     public function generateReport(string sampleId, string? templateId = (), string? generatedBy = ()) returns LabReport|error {
         // Get all results for the sample
-        LabResult[] sampleResults = self.getResultsBySample(sampleId);
+        FullLabResult[] sampleResults = self.getResultsBySample(sampleId);
 
         if sampleResults.length() == 0 {
             return error("No results found for sample");
         }
 
         // Check if all results are reviewed
-        foreach LabResult result in sampleResults {
+        foreach FullLabResult result in sampleResults {
             if result.status != "reviewed" {
                 return error("All results must be reviewed before generating report");
             }
@@ -231,9 +231,9 @@ public class LabResultService {
 
     # Get all results
     # + return - Array of all results
-    public function getAllResults() returns LabResult[] {
-        LabResult[] allResults = [];
-        foreach LabResult result in self.results {
+    public function getAllResults() returns FullLabResult[] {
+        FullLabResult[] allResults = [];
+        foreach FullLabResult result in self.results {
             allResults.push(result);
         }
         return allResults;
@@ -252,9 +252,9 @@ public class LabResultService {
     # Get results by status
     # + status - Result status
     # + return - Array of results
-    public function getResultsByStatus(string status) returns LabResult[] {
-        LabResult[] statusResults = [];
-        foreach LabResult result in self.results {
+    public function getResultsByStatus(string status) returns FullLabResult[] {
+        FullLabResult[] statusResults = [];
+        foreach FullLabResult result in self.results {
             if result.status == status {
                 statusResults.push(result);
             }
@@ -265,10 +265,10 @@ public class LabResultService {
     # Generate report summary from results
     # + results - Array of lab results
     # + return - Report summary JSON
-    private function generateReportSummary(LabResult[] results) returns json {
+    private function generateReportSummary(FullLabResult[] results) returns json {
         json[] resultSummaries = [];
 
-        foreach LabResult result in results {
+        foreach FullLabResult result in results {
             json resultSummary = {
                 "resultId": result.id,
                 "testTypeId": <string>result["testTypeId"],
@@ -306,7 +306,7 @@ public class LabResultService {
         int reviewed = 0;
         int flagged = 0;
 
-        foreach LabResult result in self.results {
+        foreach FullLabResult result in self.results {
             totalResults += 1;
             match result.status {
                 "pending_review" => {

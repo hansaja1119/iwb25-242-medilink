@@ -13,9 +13,9 @@ public class TestTypeService {
         postgresql:Client dbClient = check getDbClient();
 
         sql:ExecutionResult|sql:Error result = dbClient->execute(`
-            INSERT INTO test_types (id, name, description, category, parser_config, reference_ranges, units)
-            VALUES (${testType.id}, ${testType.name}, ${testType.description}, ${testType.category}, 
-                    ${testType?.parserConfig.toJsonString()}, ${testType?.referenceRanges.toJsonString()}, ${testType?.units})
+            INSERT INTO test_types (value, label, category, parser_class, parser_module, reference_ranges)
+            VALUES (${testType.value}, ${testType.label}, ${testType.category}, 
+                    ${testType?.parserClass.toJsonString()}, ${testType?.parserModule.toJsonString()}, ${testType?.referenceRanges.toJsonString()})
         `);
 
         if result is sql:Error {
@@ -23,7 +23,7 @@ public class TestTypeService {
             return error("Failed to create test type: " + result.message());
         }
 
-        log:printInfo("Test type created: " + testType.id);
+        log:printInfo("Test type created: " + testType.id.toString());
         return testType;
     }
 
@@ -33,8 +33,7 @@ public class TestTypeService {
         postgresql:Client dbClient = check getDbClient();
 
         stream<TestTypeRecord, sql:Error?> resultStream = dbClient->query(`
-            SELECT id, name, description, category, parser_config, reference_ranges, units, 
-                   created_at, updated_at FROM test_types ORDER BY name
+            SELECT * FROM test_types ORDER BY id
         `);
 
         TestType[] testTypes = [];
@@ -42,14 +41,16 @@ public class TestTypeService {
             do {
                 testTypes.push({
                     id: testTypeRecord.id,
-                    name: testTypeRecord.name,
-                    description: testTypeRecord.description ?: "",
-                    category: testTypeRecord.category ?: "",
-                    parserConfig: testTypeRecord.parser_config,
+                    value: testTypeRecord.value,
+                    label: testTypeRecord.label,
+                    category: testTypeRecord.category,
+                    parserClass: testTypeRecord.parser_class,
+                    parserModule: testTypeRecord.parser_module,
+                    reportFields: testTypeRecord.report_fields,
                     referenceRanges: testTypeRecord.reference_ranges,
-                    units: testTypeRecord.units,
-                    createdAt: testTypeRecord.created_at.toString(),
-                    updatedAt: testTypeRecord.updated_at.toString()
+                    basicFields: testTypeRecord.basic_fields,
+                    createdAt: testTypeRecord.created_at,
+                    updatedAt: testTypeRecord.updated_at
                 });
             };
 
@@ -77,14 +78,16 @@ public class TestTypeService {
 
         return {
             id: result.id,
-            name: result.name,
-            description: result.description ?: "",
-            category: result.category ?: "",
-            parserConfig: result.parser_config,
+            value: result.value,
+            label: result.label,
+            category: result.category,
+            parserClass: result.parser_class,
+            parserModule: result.parser_module,
+            reportFields: result.report_fields,
             referenceRanges: result.reference_ranges,
-            units: result.units,
-            createdAt: result.created_at.toString(),
-            updatedAt: result.updated_at.toString()
+            basicFields: result.basic_fields,
+            createdAt: result.created_at,
+            updatedAt: result.updated_at
         };
     }
 
@@ -97,9 +100,9 @@ public class TestTypeService {
 
         sql:ExecutionResult|sql:Error result = dbClient->execute(`
             UPDATE test_types 
-            SET name = ${testType.name}, description = ${testType.description}, 
-                category = ${testType.category}, parser_config = ${testType?.parserConfig.toJsonString()}, 
-                reference_ranges = ${testType?.referenceRanges.toJsonString()}, units = ${testType?.units},
+            SET value = ${testType.value}, label = ${testType.label},
+                category = ${testType.category}, parser_class = ${testType?.parserClass.toJsonString()}, 
+                parser_module = ${testType?.parserModule.toJsonString()}, reference_ranges = ${testType?.referenceRanges.toJsonString()},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ${id}
         `);
@@ -139,15 +142,17 @@ public class TestTypeService {
     }
 }
 
-# Database record type for test types
+# Database record type for test types (matching exact database schema)
 type TestTypeRecord record {|
-    string id;
-    string name;
-    string? description;
-    string? category;
-    json? parser_config;
-    json? reference_ranges;
-    string? units;
+    int id;
+    string value;
+    string label;
+    string category;
+    string? parser_class;
+    string? parser_module;
+    string? report_fields;
+    string? reference_ranges;
+    string? basic_fields;
     time:Civil created_at;
     time:Civil updated_at;
 |};

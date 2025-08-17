@@ -9,27 +9,28 @@ public class LabSampleService {
 
     # In-memory storage for demo purposes (replace with database later)
     private map<LabSample> samples = {};
-    private map<LabResult> results = {};
+    private map<FullLabResult> results = {};
 
     # Create a new lab sample
     # + sampleData - Sample data without ID
     # + return - Created sample or error
     public function createSample(LabSampleCreate sampleData) returns LabSample|error {
         string sampleId = uuid:createType1AsString();
-        string timestamp = time:utcToString(time:utcNow());
+        time:Civil timestamp = time:utcToCivil(time:utcNow());
 
         LabSample sample = {
             id: sampleId,
-            patientId: sampleData.patientId,
-            testTypeId: sampleData.testTypeId,
-            collectionDate: sampleData.collectionDate,
-            status: "collected",
-            priority: sampleData.priority ?: "normal",
-            notes: sampleData.notes,
-            collectedBy: sampleData.collectedBy,
-            processedBy: (),
-            processedAt: (),
-            completedAt: (),
+            labId: sampleData.labId,
+            barcode: sampleData.barcode,
+            testTypeId: sampleData.testTypeId.toString(),
+            sampleType: "blood", // Default sample type, can be customized
+            volume: (),
+            container: (),
+            patientId: sampleData.patientId ?: "",
+            collectionDate: (),
+            receivedDate: (),
+            status: sampleData.status,
+            notes: (),
             createdAt: timestamp,
             updatedAt: timestamp
         };
@@ -39,7 +40,7 @@ public class LabSampleService {
         log:printInfo("Sample created: " + sampleId + " for patient: " + sample.patientId);
 
         // Start workflow for this sample
-        WorkflowStatus|error workflowResult = labWorkflowService.startWorkflow(sample);
+        FullWorkflowStatus|error workflowResult = labWorkflowService.startWorkflow(sample);
         if workflowResult is error {
             log:printError("Failed to start workflow for sample " + sampleId + ": " + workflowResult.message());
         }
@@ -96,7 +97,7 @@ public class LabSampleService {
         }
 
         sample.status = status;
-        sample.updatedAt = time:utcToString(time:utcNow());
+        sample.updatedAt = time:utcToCivil(time:utcNow());
 
         if notes is string {
             sample.notes = notes;
@@ -124,9 +125,8 @@ public class LabSampleService {
         }
 
         sample.status = "processing";
-        sample.processedBy = processedBy;
-        sample.processedAt = time:utcToString(time:utcNow());
-        sample.updatedAt = time:utcToString(time:utcNow());
+        sample.notes = "Processed by: " + processedBy;
+        sample.updatedAt = time:utcToCivil(time:utcNow());
 
         self.samples[sampleId] = sample;
 
@@ -139,7 +139,7 @@ public class LabSampleService {
     # + sampleId - Sample ID
     # + resultData - Lab result data
     # + return - Lab result or error
-    public function completeSample(string sampleId, LabResultCreate resultData) returns LabResult|error {
+    public function completeSample(string sampleId, LabResultCreate resultData) returns FullLabResult|error {
         LabSample? sample = self.samples[sampleId];
         if sample is () {
             return error("Sample not found");
@@ -152,19 +152,19 @@ public class LabSampleService {
         string resultId = uuid:createType1AsString();
         string timestamp = time:utcToString(time:utcNow());
 
-        LabResult result = {
+        FullLabResult result = {
             id: resultId,
             sampleId: sampleId,
             testTypeId: resultData.testTypeId,
             results: resultData.results,
-            normalRanges: resultData.normalRanges,
+            normalRanges: resultData?.normalRanges,
             status: "completed",
-            reviewedBy: resultData.reviewedBy,
+            reviewedBy: resultData?.reviewedBy,
             reviewedAt: (),
             completedAt: (),
-            notes: resultData.notes,
-            resultDate: resultData.resultDate,
-            resultValue: resultData.resultValue,
+            notes: resultData?.notes,
+            resultDate: resultData?.resultDate,
+            resultValue: resultData?.resultValue,
             createdAt: timestamp,
             updatedAt: timestamp
         };
@@ -173,8 +173,8 @@ public class LabSampleService {
 
         // Update sample status
         sample.status = "completed";
-        sample.completedAt = timestamp;
-        sample.updatedAt = timestamp;
+        sample.notes = "Completed with result: " + resultId;
+        sample.updatedAt = time:utcToCivil(time:utcNow());
         self.samples[sampleId] = sample;
 
         log:printInfo("Sample completed: " + sampleId + " with result: " + resultId);
@@ -198,8 +198,8 @@ public class LabSampleService {
     public function getSampleWithResults(string sampleId) returns json|error {
         LabSample sample = check self.getSample(sampleId);
 
-        LabResult[] sampleResults = [];
-        foreach LabResult result in self.results {
+        FullLabResult[] sampleResults = [];
+        foreach FullLabResult result in self.results {
             if result.sampleId == sampleId {
                 sampleResults.push(result);
             }
@@ -226,7 +226,7 @@ public class LabSampleService {
         }
 
         sample.status = "deleted";
-        sample.updatedAt = time:utcToString(time:utcNow());
+        sample.updatedAt = time:utcToCivil(time:utcNow());
         self.samples[sampleId] = sample;
 
         log:printInfo("Sample deleted: " + sampleId);

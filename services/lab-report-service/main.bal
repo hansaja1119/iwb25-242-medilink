@@ -11,6 +11,15 @@ function init() {
     log:printInfo("        MediLink Lab Report Service Starting     ");
     log:printInfo("=================================================");
     log:printInfo(string `Port: ${servicePort}`);
+
+    // Initialize database connection
+    error? dbInitResult = initDatabase();
+    if dbInitResult is error {
+        log:printError("Failed to initialize database", dbInitResult);
+        panic error("Database initialization failed: " + dbInitResult.message());
+    }
+    log:printInfo("Database initialized successfully");
+
     log:printInfo("Available endpoints:");
     log:printInfo(string `  - Health: http://localhost:${servicePort}/health`);
     log:printInfo(string `  - Test Types: http://localhost:${servicePort}/testtypes`);
@@ -102,7 +111,7 @@ service / on new http:Listener(servicePort) {
         return labSampleService.processSample(id, processedBy);
     }
 
-    resource function put samples/[string id]/complete(@http:Payload LabResultCreate resultData) returns LabResult|error {
+    resource function put samples/[string id]/complete(@http:Payload LabResultCreate resultData) returns FullLabResult|error {
         return labSampleService.completeSample(id, resultData);
     }
 
@@ -120,31 +129,31 @@ service / on new http:Listener(servicePort) {
     }
 
     // Lab Results endpoints
-    resource function get results() returns LabResult[]|error {
+    resource function get results() returns FullLabResult[]|error {
         return labResultService.getAllResults();
     }
 
-    resource function post results(@http:Payload LabResultCreate resultData) returns LabResult|error {
+    resource function post results(@http:Payload LabResultCreate resultData) returns FullLabResult|error {
         return labResultService.createResult(resultData);
     }
 
-    resource function get results/[string id]() returns LabResult|error {
+    resource function get results/[string id]() returns FullLabResult|error {
         return labResultService.getResult(id);
     }
 
-    resource function get results/sample/[string sampleId]() returns LabResult[]|error {
+    resource function get results/sample/[string sampleId]() returns FullLabResult[]|error {
         return labResultService.getResultsBySample(sampleId);
     }
 
-    resource function get results/status/[string status]() returns LabResult[]|error {
+    resource function get results/status/[string status]() returns FullLabResult[]|error {
         return labResultService.getResultsByStatus(status);
     }
 
-    resource function put results/[string id](@http:Payload LabResultUpdate updateData) returns LabResult|error {
+    resource function put results/[string id](@http:Payload LabResultUpdate updateData) returns FullLabResult|error {
         return labResultService.updateResult(id, updateData);
     }
 
-    resource function put results/[string id]/review(@http:Payload json reviewData) returns LabResult|error {
+    resource function put results/[string id]/review(@http:Payload json reviewData) returns FullLabResult|error {
         json reviewedByValue = check reviewData.reviewedBy;
         string reviewedBy = reviewedByValue is string ? reviewedByValue : "";
         json notesValue = check reviewData.notes;
@@ -229,11 +238,11 @@ service / on new http:Listener(servicePort) {
     }
 
     // Workflow endpoints
-    resource function get workflows/active() returns WorkflowStatus[]|error {
+    resource function get workflows/active() returns FullWorkflowStatus[]|error {
         return labWorkflowService.getActiveWorkflows();
     }
 
-    resource function get workflows/[string id]() returns WorkflowStatus|error {
+    resource function get workflows/[string id]() returns FullWorkflowStatus|error {
         return labWorkflowService.getWorkflowStatus(id);
     }
 

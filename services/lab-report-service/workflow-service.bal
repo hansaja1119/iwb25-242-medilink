@@ -6,24 +6,24 @@ import ballerina/uuid;
 public class LabWorkflowService {
 
     # In-memory storage for demo purposes (replace with database later)
-    private map<WorkflowStatus> workflows = {};
+    private map<FullWorkflowStatus> workflows = {};
     private map<LabSample> samples = {};
 
     # Start a new lab workflow
     # + sampleData - Lab sample data
     # + return - Workflow status or error
-    public function startWorkflow(LabSample sampleData) returns WorkflowStatus|error {
+    public function startWorkflow(LabSample sampleData) returns FullWorkflowStatus|error {
         string workflowId = uuid:createType1AsString();
         string timestamp = time:utcToString(time:utcNow());
 
         // Store the sample
-        self.samples[sampleData.id] = sampleData;
+        self.samples[sampleData.id.toBalString()] = sampleData;
 
         // Create initial workflow status
-        WorkflowStatus workflow = {
+        FullWorkflowStatus workflow = {
             id: workflowId,
             status: "started",
-            sampleId: sampleData.id,
+            sampleId: sampleData.id.toBalString(),
             steps: [
                 {
                     name: "sample_received",
@@ -73,7 +73,7 @@ public class LabWorkflowService {
 
         self.workflows[workflowId] = workflow;
 
-        log:printInfo("Workflow started: " + workflowId + " for sample: " + sampleData.id);
+        log:printInfo("Workflow started: " + workflowId.toBalString() + " for sample: " + sampleData.id.toBalString());
 
         // Simulate starting the next step
         check self.processNextStep(workflowId);
@@ -84,9 +84,9 @@ public class LabWorkflowService {
     # Get workflow status
     # + workflowId - Workflow ID
     # + return - Workflow status or error
-    public function getWorkflowStatus(string workflowId) returns WorkflowStatus|error {
-        WorkflowStatus? workflow = self.workflows[workflowId];
-        if workflow is WorkflowStatus {
+    public function getWorkflowStatus(string workflowId) returns FullWorkflowStatus|error {
+        FullWorkflowStatus? workflow = self.workflows[workflowId];
+        if workflow is FullWorkflowStatus {
             return workflow;
         }
         return error("Workflow not found");
@@ -94,9 +94,9 @@ public class LabWorkflowService {
 
     # Get all active workflows
     # + return - Array of workflow statuses
-    public function getActiveWorkflows() returns WorkflowStatus[] {
-        WorkflowStatus[] activeWorkflows = [];
-        foreach WorkflowStatus workflow in self.workflows {
+    public function getActiveWorkflows() returns FullWorkflowStatus[] {
+        FullWorkflowStatus[] activeWorkflows = [];
+        foreach FullWorkflowStatus workflow in self.workflows {
             if workflow.status != "completed" && workflow.status != "failed" {
                 activeWorkflows.push(workflow);
             }
@@ -108,7 +108,7 @@ public class LabWorkflowService {
     # + workflowId - Workflow ID
     # + return - Error if processing fails
     public function processNextStep(string workflowId) returns error? {
-        WorkflowStatus? workflow = self.workflows[workflowId];
+        FullWorkflowStatus? workflow = self.workflows[workflowId];
         if workflow is () {
             return error("Workflow not found");
         }
@@ -139,7 +139,7 @@ public class LabWorkflowService {
     # + result - Step result
     # + return - Error if completion fails
     public function completeStep(string workflowId, int stepIndex, json result) returns error? {
-        WorkflowStatus? workflow = self.workflows[workflowId];
+        FullWorkflowStatus? workflow = self.workflows[workflowId];
         if workflow is () {
             return error("Workflow not found");
         }
@@ -183,7 +183,7 @@ public class LabWorkflowService {
     # + errorMessage - Error message
     # + return - Error if failing step fails
     public function failStep(string workflowId, int stepIndex, string errorMessage) returns error? {
-        WorkflowStatus? workflow = self.workflows[workflowId];
+        FullWorkflowStatus? workflow = self.workflows[workflowId];
         if workflow is () {
             return error("Workflow not found");
         }
@@ -212,7 +212,7 @@ public class LabWorkflowService {
     # + stepIndex - Step index
     # + return - Error if simulation fails
     private function simulateStepProcessing(string workflowId, int stepIndex) returns error? {
-        WorkflowStatus? workflow = self.workflows[workflowId];
+        FullWorkflowStatus? workflow = self.workflows[workflowId];
         if workflow is () {
             return error("Workflow not found");
         }
@@ -272,7 +272,7 @@ public class LabWorkflowService {
         int completedWorkflows = 0;
         int failedWorkflows = 0;
 
-        foreach WorkflowStatus workflow in self.workflows {
+        foreach FullWorkflowStatus workflow in self.workflows {
             match workflow.status {
                 "completed" => {
                     completedWorkflows += 1;

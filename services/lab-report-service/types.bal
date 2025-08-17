@@ -1,308 +1,407 @@
-# Lab Report Service Data Types
+import ballerina/sql;
+import ballerina/time;
 
-# Test Type entity
-public type TestType record {|
-    # Unique identifier for the test type
-    string id;
-    # Name of the test type
-    string name;
-    # Description of the test type
-    string description;
-    # Test category
+// Test Type entity - matches TypeScript TestTypes
+public type TestType record {
+    int id?;
+    string value;
+    string label;
     string category;
-    # Parser configuration for extracting data
-    json parserConfig?;
-    # Reference ranges for the test
-    json referenceRanges?;
-    # Units of measurement
-    string units?;
-    # Creation timestamp
-    string createdAt;
-    # Last update timestamp
-    string updatedAt;
-|};
-
-# Test Type Create payload
-public type TestTypeCreate record {
-    # Name of the test type
-    string name;
-    # Description of the test type
-    string description;
-    # Test category
-    string category;
-    # Parser configuration for extracting data
-    json? parserConfig;
-    # Reference ranges for the test
+    string? parserClass;
+    string? parserModule;
+    json? reportFields;
     json? referenceRanges;
-    # Units of measurement
-    string? units;
+    json? basicFields;
+    time:Civil? createdAt;
+    time:Civil? updatedAt;
 };
 
-# Test Type Update payload
-public type TestTypeUpdate record {
-    # Name of the test type
-    string? name;
-    # Description of the test type
-    string? description;
-    # Test category
+// Test Type record for database operations
+// public type TestTypeRecord record {
+//     int id?;
+//     string value;
+//     string label;
+//     string category;
+//     string? parser_class;
+//     string? parser_module;
+//     json? report_fields;
+//     json? reference_ranges;
+//     json? basic_fields;
+//     time:Civil? created_at;
+//     time:Civil? updated_at;
+// };
+
+// Lab Sample entity - matches TypeScript LabSample
+public type LabSample record {
+    string id;
+    string labId;
+    string barcode;
+    string testTypeId;
+    string sampleType;
+    decimal? volume;
+    string? container;
+    string patientId;
+    time:Civil? collectionDate;
+    time:Civil? receivedDate;
+    string status;
+    string? notes;
+    time:Civil? createdAt;
+    time:Civil? updatedAt;
+};
+
+// Lab Sample record for database operations
+public type LabSampleRecord record {
+    int id?;
+    string lab_id;
+    string barcode;
+    int test_type_id;
+    string sample_type;
+    decimal? volume;
+    string? container;
+    int? patient_id;
+    time:Civil? collection_date;
+    time:Civil? received_date;
+    string status;
+    string? notes;
+    time:Civil? created_at;
+    time:Civil? updated_at;
+};
+
+// Lab Result entity - matches TypeScript LabResult
+public type LabResult record {
+    int id?;
+    int labSampleId;
+    string? reportUrl;
+    json? extractedData;
+    time:Civil? createdAt;
+    time:Civil? updatedAt;
+    string status;
+    string? reviewNotes;
+    int? reviewedBy;
+    time:Civil? reviewedAt;
+    boolean? isAnomaly;
+    decimal? confidenceScore;
+};
+
+// Lab Result record for database operations
+public type LabResultRecord record {
+    int id?;
+    int lab_sample_id;
+    string? report_url;
+    json? extracted_data;
+    time:Civil? created_at;
+    time:Civil? updated_at;
+    string status;
+    string? review_notes;
+    int? reviewed_by;
+    time:Civil? reviewed_at;
+    boolean? is_anomaly;
+    decimal? confidence_score;
+};
+
+// Request/Response types for API operations
+public type CreateTestTypeRequest record {
+    string value;
+    string label;
+    string category;
+    string? parserClass;
+    string? parserModule;
+    json? reportFields;
+    json? referenceRanges;
+    json? basicFields;
+};
+
+public type UpdateTestTypeRequest record {
+    string? value;
+    string? label;
     string? category;
-    # Parser configuration for extracting data
-    json? parserConfig;
-    # Reference ranges for the test
+    string? parserClass;
+    string? parserModule;
+    json? reportFields;
     json? referenceRanges;
-    # Units of measurement
-    string? units;
+    json? basicFields;
 };
 
-# Lab Sample entity
-public type LabSample record {|
-    # Unique identifier for the sample
-    string id;
-    # Patient ID associated with the sample
-    string patientId;
-    # Test type ID
-    string testTypeId;
-    # Sample collection date
-    string collectionDate;
-    # Sample status (collected, processing, completed)
-    string status;
-    # Priority level (normal, urgent, stat)
-    string? priority;
-    # Collection notes
-    string? notes;
-    # Who collected the sample
-    string? collectedBy;
-    # Who processed the sample
-    string? processedBy;
-    # When processing started
-    string? processedAt;
-    # When sample was completed
-    string? completedAt;
-    # Creation timestamp
-    string createdAt;
-    # Last update timestamp
-    string updatedAt;
-|};
-
-# Lab Sample Create payload
-public type LabSampleCreate record {|
-    # Patient ID associated with the sample
-    string patientId;
-    # Test type ID
-    string testTypeId;
-    # Sample collection date
-    string collectionDate;
-    # Priority level (normal, urgent, stat)
-    string? priority;
-    # Collection notes
-    string? notes;
-    # Who collected the sample
-    string? collectedBy;
-|};
-
-# Lab Result entity
-public type LabResult record {|
-    # Unique identifier for the result
-    string id;
-    # Sample ID associated with the result
-    string sampleId;
-    # Test type ID
-    string testTypeId;
-    # Test results (can be complex JSON)
-    json results;
-    # Normal ranges for comparison
-    json? normalRanges;
-    # Result status (pending_review, reviewed, flagged)
-    string status;
-    # Who reviewed the results
-    string? reviewedBy;
-    # When results were reviewed
-    string? reviewedAt;
-    # When results were completed
-    string? completedAt;
-    # Comments or notes about the result
-    string? notes;
-    # Result date when test was performed
-    string resultDate;
-    # Actual result value
-    string resultValue;
-    # Creation timestamp
-    string createdAt;
-    # Last update timestamp
-    string updatedAt;
-|};
-
-# Lab Result Create payload
-public type LabResultCreate record {|
-    # Sample ID associated with the result
-    string sampleId;
-    # Test type ID
-    string testTypeId;
-    # Test results (can be complex JSON)
-    json results;
-    # Normal ranges for comparison
-    json? normalRanges;
-    # Who reviewed the results
-    string? reviewedBy;
-    # Comments or notes about the result
-    string? notes;
-    # Result date when test was performed
-    string resultDate;
-    # Actual result value
-    string resultValue;
-|};
-
-# Lab Result Update payload
-public type LabResultUpdate record {
-    json? results;
-    json? normalRanges;
+public type CreateLabSampleRequest record {
+    string labId;
+    string barcode;
+    int testTypeId;
+    string sampleType;
+    decimal? volume;
+    string? container;
+    int? patientId;
+    string? collectionDate;
+    string? receivedDate;
     string? status;
-    string? reviewedBy;
     string? notes;
 };
 
-# Lab Report entity
+public type UpdateLabSampleRequest record {
+    string? labId;
+    string? barcode;
+    int? testTypeId;
+    string? sampleType;
+    decimal? volume;
+    string? container;
+    int? patientId;
+    string? collectionDate;
+    string? receivedDate;
+    string? status;
+    string? notes;
+};
+
+public type CreateLabResultRequest record {
+    int labSampleId;
+    string? reportUrl;
+    json? extractedData;
+    string? status;
+    string? reviewNotes;
+    int? reviewedBy;
+    boolean? isAnomaly;
+    decimal? confidenceScore;
+};
+
+public type UpdateLabResultRequest record {
+    string? reportUrl;
+    json? extractedData;
+    string? status;
+    string? reviewNotes;
+    int? reviewedBy;
+    boolean? isAnomaly;
+    decimal? confidenceScore;
+};
+
+// Response types
+public type TestTypeResponse record {
+    int id;
+    string value;
+    string label;
+    string category;
+    string? parserClass;
+    string? parserModule;
+    json? reportFields;
+    json? referenceRanges;
+    json? basicFields;
+    string? createdAt;
+    string? updatedAt;
+};
+
+public type LabSampleResponse record {
+    int id;
+    string labId;
+    string barcode;
+    int testTypeId;
+    string sampleType;
+    decimal? volume;
+    string? container;
+    int? patientId;
+    string? collectionDate;
+    string? receivedDate;
+    string status;
+    string? notes;
+    string? createdAt;
+    string? updatedAt;
+};
+
+public type LabResultResponse record {
+    int id;
+    int labSampleId;
+    string? reportUrl;
+    json? extractedData;
+    string? createdAt;
+    string? updatedAt;
+    string status;
+    string? reviewNotes;
+    int? reviewedBy;
+    string? reviewedAt;
+    boolean? isAnomaly;
+    decimal? confidenceScore;
+};
+
+// Error response type
+public type ErrorResponse record {
+    string message;
+    string? code;
+    string? details;
+};
+
+// Generic API response type
+public type ApiResponse record {
+    boolean success;
+    string message;
+    json? data;
+    ErrorResponse? 'error;
+};
+
+// Pagination types
+public type PaginationQuery record {
+    int page = 1;
+    int pageSize = 10;
+    string? sortBy;
+    string? sortOrder;
+    string? search;
+};
+
+public type PaginatedResponse record {
+    json[] data;
+    int total;
+    int page;
+    int pageSize;
+    int totalPages;
+    boolean hasNext;
+    boolean hasPrev;
+};
+
+// Database connection configuration
+public type DatabaseConfig record {
+    string host;
+    int port;
+    string name;
+    string username;
+    string password;
+    sql:ConnectionPool? connectionPool;
+};
+
+// Service configuration
+public type ServiceConfig record {
+    int port;
+    string host;
+    DatabaseConfig database;
+    boolean enableCors;
+    string[] allowedOrigins;
+};
+
+# Processing step in workflow
+public type ProcessingStep record {
+    string name;
+    string status;
+    string startTime;
+    string? endTime;
+    json? result;
+    string? errorMessage;
+};
+
+# Workflow status structure
+public type FullWorkflowStatus record {
+    string id;
+    string status;
+    string sampleId;
+    ProcessingStep[] steps;
+    string startTime;
+    string? endTime;
+    string? errorMessage;
+};
+
+# Lab result creation record
+public type LabResultCreate record {
+    string sampleId;
+    string testTypeId;
+    json results;
+    json? normalRanges?;
+    string? reviewedBy?;
+    string? notes?;
+    string? resultDate?;
+    string? resultValue?;
+};
+
+# Lab result update record
+public type LabResultUpdate record {
+    json? results?;
+    json? normalRanges?;
+    string? status?;
+    string? reviewedBy?;
+    string? notes?;
+};
+
+# Lab report record
 public type LabReport record {
     string id;
     string sampleId;
-    string? templateId;
+    string? templateId?;
     json content;
-    string status; // "draft", "finalized"
-    string? generatedBy;
-    string? generatedAt;
-    string? finalizedBy;
-    string? finalizedAt;
+    string status;
+    string generatedBy;
+    string generatedAt;
+    string? finalizedBy?;
+    string? finalizedAt?;
     string createdAt;
     string updatedAt;
 };
 
-# Lab Report DTO
-public type LabReportDto record {|
-    # Report ID
+# Record type for creating a new lab sample
+public type LabSampleCreate record {
+    string labId;
+    string barcode;
+    int testTypeId;
+    string? patientId;
+    string? physicianId;
+    string status = "pending";
+    json? metadata;
+};
+
+# Record type for lab sample
+// public type LabSample record {
+//     string id;
+//     string patientId;
+//     string testTypeId;
+//     string collectionDate;
+//     string status;
+//     string priority;
+//     string? notes?;
+//     string collectedBy;
+//     string? processedBy?;
+//     string? processedAt?;
+//     string? completedAt?;
+//     string createdAt;
+//     string updatedAt;
+// };
+
+# Record type for creating lab results
+// public type LabResultCreate record {
+//     string testTypeId;
+//     json results;
+//     json? normalRanges?;
+//     string? reviewedBy?;
+//     string? notes?;
+//     string? resultDate?;
+//     string? resultValue?;
+// };
+
+# Record type for full lab results
+public type FullLabResult record {
     string id;
-    # Patient information
-    PatientInfo patient;
-    # Sample information
-    LabSample sample;
-    # Test results
-    LabResult[] results;
-    # Report status
-    string status;
-    # Report generation date
-    string reportDate;
-    # Doctor information
-    DoctorInfo doctor?;
-    # Additional metadata
-    json metadata?;
-|};
-
-# Patient information
-public type PatientInfo record {|
-    # Patient ID
-    string id;
-    # Patient name
-    string name;
-    # Date of birth
-    string dateOfBirth;
-    # Gender
-    string gender;
-    # Contact information
-    ContactInfo contact?;
-|};
-
-# Contact information
-public type ContactInfo record {|
-    # Phone number
-    string phone?;
-    # Email address
-    string email?;
-    # Address
-    AddressInfo address?;
-|};
-
-# Address information
-public type AddressInfo record {|
-    # Street address
-    string street?;
-    # City
-    string city?;
-    # State or province
-    string state?;
-    # Postal code
-    string postalCode?;
-    # Country
-    string country?;
-|};
-
-# Doctor information
-public type DoctorInfo record {|
-    # Doctor ID
-    string id;
-    # Doctor name
-    string name;
-    # Specialization
-    string specialization?;
-    # License number
-    string licenseNumber?;
-    # Contact information
-    ContactInfo contact?;
-|};
-
-# Workflow status
-public type WorkflowStatus record {
-    # Workflow ID
-    string id;
-    # Current status
-    string status;
-    # Sample ID being processed
     string sampleId;
-    # Processing steps
-    ProcessingStep[] steps;
-    # Start time
-    string startTime;
-    # End time (if completed)
-    string? endTime;
-    # Error information (if any)
-    string? errorMessage;
-};
-
-# Processing step
-public type ProcessingStep record {
-    # Step name
-    string name;
-    # Step status
+    string testTypeId;
+    json results;
+    json? normalRanges?;
     string status;
-    # Start time
-    string startTime;
-    # End time (if completed)
-    string? endTime;
-    # Step result or output
-    json? result;
-    # Error message (if failed)
-    string? errorMessage;
+    string? reviewedBy?;
+    string? reviewedAt?;
+    string? completedAt?;
+    string? notes?;
+    string? resultDate?;
+    string? resultValue?;
+    string createdAt;
+    string updatedAt;
 };
 
-# Template information
-public type Template record {|
-    # Template ID
+# Workflow status type
+public type WorkflowStatus record {
     string id;
-    # Template name
-    string name;
-    # Template description
-    string description;
-    # Template content/structure
-    json content;
-    # Test types this template supports
-    string[] supportedTestTypes;
-    # Template version
-    string version;
-    # Creation timestamp
-    string createdAt;
-    # Last update timestamp
-    string updatedAt;
-|};
+    string status;
+    string message;
+};
 
-# Report Template Types
+# Template Section type
+public type TemplateSection record {
+    string id;
+    string name;
+    string sectionType;
+    int orderIndex;
+    json content;
+};
+
+# Report Template type
 public type ReportTemplate record {
     string id;
     string name;
@@ -310,97 +409,25 @@ public type ReportTemplate record {
     string testTypeId;
     TemplateSection[] sections;
     boolean isActive;
-    string? createdBy;
+    string createdBy;
     string createdAt;
     string updatedAt;
 };
 
-public type TemplateSection record {
-    string id;
-    string name;
-    string sectionType; // "header", "patient_info", "test_results", "interpretation", "footer"
-    int orderIndex;
-    json content;
-};
-
+# Report Template Create type
 public type ReportTemplateCreate record {
     string name;
     string description;
     string testTypeId;
     TemplateSection[] sections;
     boolean? isActive;
-    string? createdBy;
+    string createdBy;
 };
 
+# Report Template Update type
 public type ReportTemplateUpdate record {
     string? name;
     string? description;
     TemplateSection[]? sections;
     boolean? isActive;
 };
-
-# API Response wrapper
-public type ApiResponse record {|
-    # Response message
-    string message;
-    # Response data
-    anydata data?;
-    # Error information
-    string 'error?;
-    # Timestamp
-    string timestamp;
-    # Pagination info (for list endpoints)
-    PaginationInfo pagination?;
-|};
-
-# Pagination information
-public type PaginationInfo record {|
-    # Current page number
-    int page;
-    # Number of items per page
-    int pageSize;
-    # Total number of items
-    int totalItems;
-    # Total number of pages
-    int totalPages;
-    # Has next page
-    boolean hasNext;
-    # Has previous page
-    boolean hasPrevious;
-|};
-
-# Event data for Kafka
-public type LabSampleCreatedEvent record {|
-    # Event ID
-    string eventId;
-    # Sample ID
-    string sampleId;
-    # Patient ID
-    string patientId;
-    # Event timestamp
-    string timestamp;
-    # Sample data
-    LabSample sampleData;
-    # Event metadata
-    json metadata?;
-|};
-
-# File upload information
-public type FileUploadInfo record {|
-    # File ID
-    string id;
-    # Original filename
-    string filename;
-    # File size in bytes
-    int size;
-    # MIME type
-    string mimeType;
-    # Upload timestamp
-    string uploadedAt;
-    # File path or URL
-    string path;
-    # Associated sample ID
-    string sampleId?;
-    # Processing status
-    string processingStatus;
-|};

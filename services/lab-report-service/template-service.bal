@@ -228,11 +228,12 @@ public class TemplateService {
                 json[] results = [];
                 foreach LabResult result in resultData {
                     json resultContent = {
-                        "testTypeId": <string>result["testTypeId"],
-                        "results": <json>result["results"],
-                        "normalRanges": <json>result["normalRanges"],
+                        "labSampleId": result.labSampleId,
+                        "extractedData": result.extractedData,
                         "status": result.status,
-                        "notes": <string>result["notes"]
+                        "reviewNotes": result.reviewNotes,
+                        "isAnomaly": result.isAnomaly,
+                        "confidenceScore": result.confidenceScore
                     };
                     results.push(resultContent);
                 }
