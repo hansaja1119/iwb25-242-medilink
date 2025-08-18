@@ -1,7 +1,25 @@
 import ballerina/sql;
 import ballerina/time;
 
-// Test Type entity - matches TypeScript TestTypes
+// Test Type entity - mat// Lab Sample record for database operations
+public type LabSampleRecord record {
+    int id?;
+    string labId;
+    string barcode;
+    int testTypeId;
+    string sampleType;
+    string? volume;
+    string? container;
+    string patientId;
+    time:Civil? createdAt;
+    time:Civil? expectedTime;
+    time:Civil? updatedAt;
+    string status;
+    string? priority;
+    string? notes;
+};
+
+// Test Types
 public type TestType record {
     int id?;
     string value;
@@ -56,38 +74,20 @@ public type TestTypeUpdate record {
 
 // Lab Sample entity - matches TypeScript LabSample
 public type LabSample record {
-    string id;
+    string id?;
     string labId;
     string barcode;
-    string testTypeId;
+    int testTypeId;
     string sampleType;
-    decimal? volume;
+    string? volume;
     string? container;
     string patientId;
-    time:Civil? collectionDate;
-    time:Civil? receivedDate;
-    string status;
-    string? notes;
     time:Civil? createdAt;
+    time:Civil? expectedTime;
     time:Civil? updatedAt;
-};
-
-// Lab Sample record for database operations
-public type LabSampleRecord record {
-    int id?;
-    string lab_id;
-    string barcode;
-    int test_type_id;
-    string sample_type;
-    decimal? volume;
-    string? container;
-    int? patient_id;
-    time:Civil? collection_date;
-    time:Civil? received_date;
     string status;
+    string? priority;
     string? notes;
-    time:Civil? created_at;
-    time:Civil? updated_at;
 };
 
 // Lab Result entity - matches TypeScript LabResult
@@ -356,10 +356,29 @@ public type LabSampleCreate record {
     string labId;
     string barcode;
     int testTypeId;
-    string? patientId;
-    string? physicianId;
+    string sampleType = "blood";
+    string? volume;
+    string? container;
+    string patientId;
     string status = "pending";
-    json? metadata;
+    string? priority;
+    string? notes;
+    string? expectedTime;
+};
+
+// Lab Sample update payload
+public type LabSampleUpdate record {
+    string? labId;
+    string? barcode;
+    int? testTypeId;
+    string? sampleType;
+    string? volume;
+    string? container;
+    string? patientId;
+    string? status;
+    string? priority;
+    string? notes;
+    string? expectedTime;
 };
 
 # Record type for lab sample

@@ -87,33 +87,33 @@ function createTables() returns error? {
 
     // Create lab_samples table (matching LabSample entity)
     sql:ExecutionResult|sql:Error result2 = dbClientInstance->execute(
-        `CREATE TABLE IF NOT EXISTS lab_samples (
+        `CREATE TABLE IF NOT EXISTS lab_sample (
             id SERIAL PRIMARY KEY,
-            labId VARCHAR(255) NOT NULL,
+            lab_id VARCHAR(255) NOT NULL,
             barcode VARCHAR(255) NOT NULL,
-            testTypeId INTEGER NOT NULL,
-            sampleType VARCHAR(100) NOT NULL,
+            test_type_id INTEGER NOT NULL,
+            sample_type VARCHAR(100) NOT NULL,
             volume VARCHAR(50),
             container VARCHAR(100),
-            patientId VARCHAR(255) NOT NULL,
-            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expectedTime TIMESTAMP,
-            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            patient_id VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expected_time TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             status VARCHAR(50) DEFAULT 'pending',
             priority VARCHAR(50) DEFAULT 'normal',
             notes TEXT,
-            FOREIGN KEY (testTypeId) REFERENCES test_types(id)
+            FOREIGN KEY (test_type_id) REFERENCES test_types(id)
         )`
     );
 
     if result2 is sql:Error {
-        log:printError("Failed to create lab_samples table", result2);
+        log:printError("Failed to create lab_sample table", result2);
         return result2;
     }
 
     // Create lab_results table (matching LabResult entity)
     sql:ExecutionResult|sql:Error result3 = dbClientInstance->execute(
-        `CREATE TABLE IF NOT EXISTS lab_results (
+        `CREATE TABLE IF NOT EXISTS lab_result (
             id SERIAL PRIMARY KEY,
             labSampleId INTEGER NOT NULL,
             reportUrl VARCHAR(500),
@@ -125,7 +125,7 @@ function createTables() returns error? {
     );
 
     if result3 is sql:Error {
-        log:printError("Failed to create lab_results table", result3);
+        log:printError("Failed to create lab_result table", result3);
         return result3;
     }
 

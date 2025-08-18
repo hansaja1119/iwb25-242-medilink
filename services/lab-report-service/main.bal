@@ -63,9 +63,9 @@ service / on new http:Listener(servicePort) {
         return testTypeService.createTestType(testTypeData);
     }
 
-    // resource function get testtypes/[string id]() returns TestType|error {
-    //     return testTypeService.getTestType(id);
-    // }
+    resource function get testtypes/[string id]() returns TestType|error {
+        return testTypeService.getTestTypeById(id);
+    }
 
     resource function put testtypes/[string id](@http:Payload TestTypeUpdate updateData) returns TestType|error {
         return testTypeService.updateTestType(id, updateData);
@@ -87,6 +87,10 @@ service / on new http:Listener(servicePort) {
 
     resource function get samples/[string id]() returns LabSample|error {
         return labSampleService.getSample(id);
+    }
+
+    resource function put samples/[string id](@http:Payload LabSampleUpdate updateData) returns LabSample|error {
+        return labSampleService.updateSample(id, updateData);
     }
 
     resource function get samples/patient/[string patientId]() returns LabSample[]|error {
