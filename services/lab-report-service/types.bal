@@ -109,17 +109,41 @@ public type LabResult record {
 // Lab Result record for database operations
 public type LabResultRecord record {
     int id?;
-    int lab_sample_id;
-    string? report_url;
-    json? extracted_data;
-    time:Civil? created_at;
-    time:Civil? updated_at;
+    int labSampleId;
+    time:Civil? createdAt;
     string status;
-    string? review_notes;
-    int? reviewed_by;
-    time:Civil? reviewed_at;
-    boolean? is_anomaly;
-    decimal? confidence_score;
+    string? extractedData;
+};
+
+// Lab Result entity for API
+public type LabResultEntity record {
+    string id;
+    string sampleId;
+    string testTypeId;
+    json results;
+    json? normalRanges;
+    string status;
+    string? reviewedBy;
+    string? reviewedAt;
+    string? completedAt;
+    string? notes;
+    string? resultDate;
+    string? resultValue;
+    string createdAt;
+    string updatedAt;
+};
+
+// Lab Result Create payload
+public type LabResultCreatePayload record {
+    int labSampleId;
+    string status = "pending_review";
+    json? extractedData;
+};
+
+// Lab Result Update payload
+public type LabResultUpdatePayload record {
+    string? status;
+    json? extractedData;
 };
 
 // Request/Response types for API operations
