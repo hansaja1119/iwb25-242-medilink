@@ -136,7 +136,7 @@ service /api on new http:Listener(appConfig.app.port, config = {host: appConfig.
     # + req - HTTP request
     # + return - HTTP response from lab report service
     resource function 'default reports(http:Request req) returns http:Response|error {
-        return check forwardToService("labReport", "/reports", req);
+        return check forwardToService("labReport", "", req);
     }
 
     # Lab report service routes with path
@@ -144,7 +144,7 @@ service /api on new http:Listener(appConfig.app.port, config = {host: appConfig.
     # + req - HTTP request
     # + return - HTTP response from lab report service
     resource function 'default reports/[string... path](http:Request req) returns http:Response|error {
-        return check forwardToService("labReport", string `/reports/${string:'join("/", ...path)}`, req);
+        return check forwardToService("labReport", string `/${string:'join("/", ...path)}`, req);
     }
 
     # Default route for unhandled paths
@@ -204,20 +204,26 @@ function forwardToService(string serviceName, string path, http:Request request)
 # + serviceName - Name of the service
 # + return - Base URL of the service
 function getServiceUrl(string serviceName) returns string {
+    string url = "";
     if serviceName == "user" {
-        return appConfig.services.userService;
+        url = appConfig.services.userService;
     } else if serviceName == "appointment" {
-        return appConfig.services.appointmentService;
+        url = appConfig.services.appointmentService;
     } else if serviceName == "labReport" {
-        return appConfig.services.labReportService;
+        url = appConfig.services.labReportService;
     } else {
-        return "http://localhost:3000"; // Default fallback
+        url = "http://localhost:3000"; // Default fallback
     }
+    log:printInfo(string `Getting service URL for ${serviceName}: ${url}`);
+    return url;
 }
 
 # Load configuration from environment variables
 # + return - Application configuration
 function loadConfig() returns Config {
+    // string labReportServiceUrl = getEnvVar("LAB_REPORT_SERVICE_URL", "http://localhost:3004");
+    // log:printInfo(string `Loading lab report service URL: ${labReportServiceUrl}`);
+
     return {
         app: {
             host: getEnvVar("API_GATEWAY_HOST", "0.0.0.0"),
@@ -236,7 +242,7 @@ function loadConfig() returns Config {
         services: {
             userService: getEnvVar("USER_SERVICE_URL", "http://localhost:3001"),
             appointmentService: getEnvVar("APPOINTMENT_SERVICE_URL", "http://localhost:3002"),
-            labReportService: getEnvVar("LAB_REPORT_SERVICE_URL", "http://localhost:3100")
+            labReportService: getEnvVar("LAB_REPORT_SERVICE_URL", "http://localhost:3004")
         },
         rateLimit: {
             windowMs: getIntEnvVar("RATE_LIMIT_WINDOW", 60000),
@@ -251,7 +257,10 @@ function loadConfig() returns Config {
 # + return - Environment variable value or default value
 function getEnvVar(string key, string defaultValue) returns string {
     string? value = os:getEnv(key);
-    return value is string ? value : defaultValue;
+    if value is string && value.trim() != "" {
+        return value;
+    }
+    return defaultValue;
 }
 
 # Helper function to get integer environment variable with default

@@ -1,21 +1,20 @@
 import ballerina/log;
 import ballerina/sql;
-import ballerina/time;
 import ballerinax/postgresql;
 
 # Test Type Service for managing test types
 public class TestTypeService {
 
     # Create a new test type
-    # + testType - Test type data
+    # + testTypeData - Test type creation data
     # + return - Created test type or error
-    public function createTestType(TestType testType) returns TestType|error {
+    public function createTestType(TestTypeCreate testTypeData) returns TestType|error {
         postgresql:Client dbClient = check getDbClient();
 
         sql:ExecutionResult|sql:Error result = dbClient->execute(`
-            INSERT INTO test_types (value, label, category, parser_class, parser_module, reference_ranges)
-            VALUES (${testType.value}, ${testType.label}, ${testType.category}, 
-                    ${testType?.parserClass.toJsonString()}, ${testType?.parserModule.toJsonString()}, ${testType?.referenceRanges.toJsonString()})
+            INSERT INTO test_types (value, label, category, parser_class, parser_module, reference_ranges, report_fields)
+            VALUES (${testTypeData.value}, ${testTypeData.label}, ${testTypeData.category}, 
+                    ${testTypeData?.parserClass}, ${testTypeData?.parserModule}, ${testTypeData?.referenceRanges.toJsonString()}, ${testTypeData?.reportFields.toJsonString()})
         `);
 
         if result is sql:Error {
@@ -23,8 +22,14 @@ public class TestTypeService {
             return error("Failed to create test type: " + result.message());
         }
 
-        log:printInfo("Test type created: " + testType.id.toString());
-        return testType;
+        // Get the generated ID and return the full TestType
+        int|string? generatedId = result.lastInsertId;
+        if generatedId is int {
+            log:printInfo("Test type created with ID: " + generatedId.toString());
+            return self.getTestTypeById(generatedId.toString());
+        } else {
+            return error("Failed to get generated test type ID");
+        }
     }
 
     # Get all test types
@@ -64,9 +69,14 @@ public class TestTypeService {
     public function getTestTypeById(string id) returns TestType|error {
         postgresql:Client dbClient = check getDbClient();
 
+        // Convert string ID to integer
+        int|error idInt = int:fromString(id);
+        if idInt is error {
+            return error("Invalid test type ID format");
+        }
+
         TestTypeRecord|sql:Error result = dbClient->queryRow(`
-            SELECT id, name, description, category, parser_config, reference_ranges, units, 
-                   created_at, updated_at FROM test_types WHERE id = ${id}
+            SELECT * FROM test_types WHERE id = ${idInt}
         `);
 
         if result is sql:Error {
@@ -93,18 +103,27 @@ public class TestTypeService {
 
     # Update test type
     # + id - Test type ID
-    # + testType - Updated test type data
+    # + updateData - Updated test type data
     # + return - Updated test type or error
-    public function updateTestType(string id, TestType testType) returns TestType|error {
+    public function updateTestType(string id, TestTypeUpdate updateData) returns TestType|error {
         postgresql:Client dbClient = check getDbClient();
+
+        // Convert string ID to integer
+        int|error idInt = int:fromString(id);
+        if idInt is error {
+            return error("Invalid test type ID format");
+        }
 
         sql:ExecutionResult|sql:Error result = dbClient->execute(`
             UPDATE test_types 
-            SET value = ${testType.value}, label = ${testType.label},
-                category = ${testType.category}, parser_class = ${testType?.parserClass.toJsonString()}, 
-                parser_module = ${testType?.parserModule.toJsonString()}, reference_ranges = ${testType?.referenceRanges.toJsonString()},
+            SET value = COALESCE(${updateData?.value}, value), 
+                label = COALESCE(${updateData?.label}, label),
+                category = COALESCE(${updateData?.category}, category), 
+                parser_class = COALESCE(${updateData?.parserClass}, parser_class), 
+                parser_module = COALESCE(${updateData?.parserModule}, parser_module), 
+                reference_ranges = COALESCE(${updateData?.referenceRanges.toJsonString()}, reference_ranges),
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = ${id}
+            WHERE id = ${idInt}
         `);
 
         if result is sql:Error {
@@ -125,8 +144,14 @@ public class TestTypeService {
     public function deleteTestType(string id) returns error? {
         postgresql:Client dbClient = check getDbClient();
 
+        // Convert string ID to integer
+        int|error idInt = int:fromString(id);
+        if idInt is error {
+            return error("Invalid test type ID format");
+        }
+
         sql:ExecutionResult|sql:Error result = dbClient->execute(`
-            DELETE FROM test_types WHERE id = ${id}
+            DELETE FROM test_types WHERE id = ${idInt}
         `);
 
         if result is sql:Error {
@@ -143,19 +168,6 @@ public class TestTypeService {
 }
 
 # Database record type for test types (matching exact database schema)
-type TestTypeRecord record {|
-    int id;
-    string value;
-    string label;
-    string category;
-    string? parser_class;
-    string? parser_module;
-    string? report_fields;
-    string? reference_ranges;
-    string? basic_fields;
-    time:Civil created_at;
-    time:Civil updated_at;
-|};
 
 # Global test type service instance
 public final TestTypeService testTypeService = new;

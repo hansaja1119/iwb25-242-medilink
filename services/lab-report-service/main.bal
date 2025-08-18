@@ -59,7 +59,7 @@ service / on new http:Listener(servicePort) {
         return testTypeService.getAllTestTypes();
     }
 
-    resource function post testtypes(@http:Payload TestType testTypeData) returns TestType|error {
+    resource function post testtypes(@http:Payload TestTypeCreate testTypeData) returns TestType|error {
         return testTypeService.createTestType(testTypeData);
     }
 
@@ -67,7 +67,7 @@ service / on new http:Listener(servicePort) {
     //     return testTypeService.getTestType(id);
     // }
 
-    resource function put testtypes/[string id](@http:Payload TestType updateData) returns TestType|error {
+    resource function put testtypes/[string id](@http:Payload TestTypeUpdate updateData) returns TestType|error {
         return testTypeService.updateTestType(id, updateData);
     }
 

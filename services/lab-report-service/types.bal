@@ -16,6 +16,29 @@ public type TestType record {
     time:Civil? updatedAt;
 };
 
+// Test Type creation payload - excludes auto-generated fields
+public type TestTypeCreate record {
+    string value;
+    string label;
+    string category;
+    string? parserClass;
+    string? parserModule;
+    json? reportFields;
+    json? referenceRanges;
+};
+
+// Test Type update payload - excludes auto-generated fields
+public type TestTypeUpdate record {
+    string? value;
+    string? label;
+    string? category;
+    string? parserClass;
+    string? parserModule;
+    json? reportFields;
+    json? referenceRanges;
+    json? basicFields;
+};
+
 // Test Type record for database operations
 // public type TestTypeRecord record {
 //     int id?;
@@ -431,3 +454,17 @@ public type ReportTemplateUpdate record {
     TemplateSection[]? sections;
     boolean? isActive;
 };
+
+type TestTypeRecord record {|
+    int id;
+    string value;
+    string label;
+    string category;
+    string? parser_class;
+    string? parser_module;
+    string? report_fields;
+    string? reference_ranges;
+    string? basic_fields;
+    time:Civil? created_at;
+    time:Civil? updated_at;
+|};
