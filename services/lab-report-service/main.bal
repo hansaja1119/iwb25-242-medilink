@@ -255,6 +255,16 @@ service / on new http:Listener(servicePort) {
         return {"message": "Workflow step processed"};
     }
 
+    # Process lab report for a sample
+    resource function post workflows/samples/[string sampleId]/process\-report(@http:Payload ReportProcessRequest request) returns ReportProcessResponse|error {
+        return reportProcessingService.processReport(sampleId, request);
+    }
+
+    # Get report processing statistics
+    resource function get workflows/processing/stats() returns json|error {
+        return reportProcessingService.getProcessingStats();
+    }
+
     resource function put workflows/[string id]/step/[int stepIndex]/complete(@http:Payload json stepData) returns json|error {
         json resultValue = check stepData.result;
         check labWorkflowService.completeStep(id, stepIndex, resultValue);

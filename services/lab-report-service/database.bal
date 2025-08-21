@@ -115,12 +115,12 @@ function createTables() returns error? {
     sql:ExecutionResult|sql:Error result3 = dbClientInstance->execute(
         `CREATE TABLE IF NOT EXISTS lab_result (
             id SERIAL PRIMARY KEY,
-            labSampleId INTEGER NOT NULL,
-            reportUrl VARCHAR(500),
-            extractedData TEXT,
-            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            "labSampleId" INTEGER NOT NULL,
+            "reportUrl" VARCHAR(500),
+            "extractedData" TEXT,
+            "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             status VARCHAR(50) DEFAULT 'processed',
-            FOREIGN KEY (labSampleId) REFERENCES lab_samples(id)
+            FOREIGN KEY ("labSampleId") REFERENCES lab_sample(id)
         )`
     );
 
@@ -169,6 +169,66 @@ function createTables() returns error? {
     }
 
     log:printInfo("All database tables created successfully");
+
+    // Insert initial test data
+    error? dataResult = insertInitialData();
+    if dataResult is error {
+        log:printError("Failed to insert initial data", dataResult);
+        return dataResult;
+    }
+
+    return;
+}
+
+# Insert initial test data
+# + return - Error if data insertion fails
+function insertInitialData() returns error? {
+    postgresql:Client|error clientResult = getDbClient();
+    if clientResult is error {
+        return clientResult;
+    }
+    postgresql:Client dbClientInstance = clientResult;
+
+    // Insert test types if they don't exist
+    sql:ExecutionResult|sql:Error testTypeResult = dbClientInstance->execute(`
+        INSERT INTO test_types (id, value, label, category, parser_class, parser_module) 
+        VALUES 
+            (1, 'fbc', 'Full Blood Count', 'hematology', 'FBCReportParser', 'parser_fbc_report'),
+            (2, 'lipid', 'Lipid Profile', 'biochemistry', 'LabReportParser', 'parser_lab_report'),
+            (3, 'thyroid', 'Thyroid Function', 'endocrinology', 'LabReportParser', 'parser_lab_report')
+        ON CONFLICT (id) DO NOTHING
+    `);
+
+    if testTypeResult is sql:Error {
+        log:printError("Failed to insert test types", testTypeResult);
+        return testTypeResult;
+    }
+
+    // Insert sample test data if no samples exist
+    record {int count;}|sql:Error sampleCountResult = dbClientInstance->queryRow(`SELECT COUNT(*) as count FROM lab_sample`);
+    int sampleCount = sampleCountResult is record {int count;} ? sampleCountResult.count : 0;
+
+    if sampleCount == 0 {
+        sql:ExecutionResult|sql:Error sampleResult = dbClientInstance->execute(`
+            INSERT INTO lab_sample (id, lab_id, barcode, test_type_id, sample_type, volume, container, patient_id, status, priority) 
+            VALUES 
+                (1, 'LAB001', 'BC001', 1, 'blood', '5ml', 'EDTA tube', 'P001', 'pending', 'normal'),
+                (2, 'LAB002', 'BC002', 2, 'serum', '3ml', 'SST tube', 'P002', 'pending', 'normal'),
+                (3, 'LAB003', 'BC003', 3, 'serum', '2ml', 'SST tube', 'P003', 'pending', 'normal'),
+                (8, 'LAB008', 'BC008', 1, 'blood', '5ml', 'EDTA tube', 'P008', 'pending', 'normal')
+            ON CONFLICT (id) DO NOTHING
+        `);
+
+        if sampleResult is sql:Error {
+            log:printError("Failed to insert sample data", sampleResult);
+            return sampleResult;
+        }
+
+        log:printInfo("Initial test data inserted successfully");
+    } else {
+        log:printInfo("Sample data already exists, skipping initial data insertion");
+    }
+
     return;
 }
 

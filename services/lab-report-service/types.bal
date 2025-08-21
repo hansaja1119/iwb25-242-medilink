@@ -113,6 +113,7 @@ public type LabResultRecord record {
     time:Civil? createdAt;
     string status;
     string? extractedData;
+    string? reportUrl;
 };
 
 // Lab Result entity for API
@@ -337,6 +338,23 @@ public type FullWorkflowStatus record {
     string startTime;
     string? endTime;
     string? errorMessage;
+};
+
+# Report processing request
+public type ReportProcessRequest record {
+    string reportFilePath;
+    string? processedBy?;
+};
+
+# Report processing response
+public type ReportProcessResponse record {
+    string resultId;
+    string sampleId;
+    string testTypeId;
+    json extractedData;
+    string status;
+    string processedAt;
+    string? processedBy?;
 };
 
 # Lab result creation record

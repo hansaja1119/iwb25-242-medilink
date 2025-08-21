@@ -20,7 +20,7 @@ public class LabResultService {
 
         // Insert into database
         sql:ExecutionResult|sql:Error result = dbClient->execute(`
-            INSERT INTO lab_result ("labSampleId", status, "extractedData")
+            INSERT INTO lab_result (lab_sample_id, status, extracted_data)
             VALUES (${sampleIdInt}, 'pending_review', ${resultData.results.toJsonString()})
             RETURNING id
         `);
@@ -30,15 +30,28 @@ public class LabResultService {
             return error("Failed to create lab result: " + result.message());
         }
 
-        string generatedId = "1"; // Default value
+        // Get the generated ID
+        string generatedId = "";
+        if result.generatedKeys != () {
+            record {}[] keys = result.generatedKeys ?: [];
+            if keys.length() > 0 {
+                record {} firstKey = keys[0];
+                if firstKey.hasKey("id") {
+                    var idValue = firstKey["id"];
+                    generatedId = idValue is int ? idValue.toString() : idValue.toString();
+                }
+            }
+        }
 
         string timestamp = time:utcToString(time:utcNow());
         FullLabResult labResult = {
             id: generatedId,
             sampleId: resultData.sampleId,
-            testTypeId: resultData.testTypeId,
             status: "pending_review",
             results: resultData.results,
+            reportUrl: resultData.reportUrl ?: "",
+            reviewedBy: "",
+            reviewNotes: "",
             createdAt: timestamp,
             updatedAt: timestamp
         };
@@ -86,53 +99,7 @@ public class LabResultService {
         }
 
         stream<LabResultRecord, sql:Error?> resultStream = dbClient->query(`
-            SELECT * FROM lab_result WHERE "labSampleId" = ${sampleIdInt} ORDER BY "createdAt" DESC
-        `);
-
-        FullLabResult[] results = [];
-        check from LabResultRecord labResultRecord in resultStream
-            do {
-                results.push(self.convertToFullLabResult(labResultRecord));
-            };
-
-        check resultStream.close();
-        return results;
-    }
-
-    # Get all results
-    # + return - Array of all results
-    public function getAllResults() returns FullLabResult[]|error {
-        postgresql:Client dbClient = check getDbClient();
-
-        stream<LabResultRecord, sql:Error?> resultStream = dbClient->query(`
-            SELECT * FROM lab_result ORDER BY "createdAt" DESC
-        `);
-
-        FullLabResult[] results = [];
-        check from LabResultRecord labResultRecord in resultStream
-            do {
-                results.push(self.convertToFullLabResult(labResultRecord));
-            };
-
-        check resultStream.close();
-        return results;
-    }
-
-    # Get results by sample (alias method)
-    # + sampleId - Sample ID
-    # + return - Array of results
-    public function getResultsBySample(string sampleId) returns FullLabResult[]|error {
-        return self.getResultsBySampleId(sampleId);
-    }
-
-    # Get results by status
-    # + status - Result status
-    # + return - Array of results
-    public function getResultsByStatus(string status) returns FullLabResult[]|error {
-        postgresql:Client dbClient = check getDbClient();
-
-        stream<LabResultRecord, sql:Error?> resultStream = dbClient->query(`
-            SELECT * FROM lab_result WHERE status = ${status} ORDER BY "createdAt" DESC
+            SELECT * FROM lab_result WHERE lab_sample_id = ${sampleIdInt} ORDER BY created_at DESC
         `);
 
         FullLabResult[] results = [];
@@ -150,88 +117,105 @@ public class LabResultService {
     # + updateData - Update data
     # + return - Updated result or error
     public function updateResult(string resultId, LabResultUpdate updateData) returns FullLabResult|error {
-        // For now, just return the existing result
-        return self.getResult(resultId);
+        postgresql:Client dbClient = check getDbClient();
+
+        // Convert string ID to integer
+        int|error idInt = int:fromString(resultId);
+        if idInt is error {
+            return error("Invalid result ID format");
+        }
+
+        // Handle optional results conversion
+        string? resultsJson = updateData?.results is json ? updateData?.results.toJsonString() : ();
+
+        sql:ExecutionResult|sql:Error result = dbClient->execute(`
+            UPDATE lab_result 
+            SET status = COALESCE(${updateData?.status}, status),
+                extracted_data = COALESCE(${resultsJson}, extracted_data)
+            WHERE id = ${idInt}
+        `);
+
+        if result is sql:Error {
+            return error("Failed to update lab result: " + result.message());
+        }
+
+        if result.affectedRowCount == 0 {
+            return error("Lab result not found");
+        }
+
+        log:printInfo("Lab result updated: " + resultId);
+        return check self.getResult(resultId);
     }
 
-    # Review result
+    # Review and approve result
     # + resultId - Result ID
     # + reviewedBy - Reviewer name
     # + notes - Review notes
     # + return - Updated result or error
     public function reviewResult(string resultId, string reviewedBy, string? notes = ()) returns FullLabResult|error {
-        // For now, just return the existing result
-        return self.getResult(resultId);
+        postgresql:Client dbClient = check getDbClient();
+
+        // Convert string ID to integer
+        int|error idInt = int:fromString(resultId);
+        if idInt is error {
+            return error("Invalid result ID format");
+        }
+
+        sql:ExecutionResult|sql:Error result = dbClient->execute(`
+            UPDATE lab_result 
+            SET status = 'reviewed'
+            WHERE id = ${idInt}
+        `);
+
+        if result is sql:Error {
+            return error("Failed to review lab result: " + result.message());
+        }
+
+        if result.affectedRowCount == 0 {
+            return error("Lab result not found");
+        }
+
+        log:printInfo("Lab result reviewed: " + resultId + " by " + reviewedBy);
+        return check self.getResult(resultId);
     }
 
-    # Get all reports
-    # + return - Array of reports
-    public function getAllReports() returns LabReport[]|error {
-        return [];
+    # Get all results
+    # + return - Array of all results
+    public function getAllResults() returns FullLabResult[]|error {
+        postgresql:Client dbClient = check getDbClient();
+
+        stream<LabResultRecord, sql:Error?> resultStream = dbClient->query(`
+            SELECT * FROM lab_result ORDER BY created_at DESC
+        `);
+
+        FullLabResult[] results = [];
+        check from LabResultRecord labResultRecord in resultStream
+            do {
+                results.push(self.convertToFullLabResult(labResultRecord));
+            };
+
+        check resultStream.close();
+        return results;
     }
 
-    # Generate report
-    # + sampleId - Sample ID
-    # + templateId - Template ID
-    # + generatedBy - Generated by
-    # + return - Generated report
-    public function generateReport(string sampleId, string? templateId, string? generatedBy) returns LabReport|error {
-        string timestamp = time:utcToString(time:utcNow());
-        return {
-            id: "report-1",
-            sampleId: sampleId,
-            templateId: templateId,
-            content: {"status": "generated"},
-            status: "generated",
-            generatedBy: generatedBy ?: "system",
-            generatedAt: timestamp,
-            createdAt: timestamp,
-            updatedAt: timestamp
-        };
-    }
+    # Get results by status
+    # + status - Result status
+    # + return - Array of results
+    public function getResultsByStatus(string status) returns FullLabResult[]|error {
+        postgresql:Client dbClient = check getDbClient();
 
-    # Get report
-    # + reportId - Report ID
-    # + return - Report data
-    public function getReport(string reportId) returns LabReport|error {
-        string timestamp = time:utcToString(time:utcNow());
-        return {
-            id: reportId,
-            sampleId: "1",
-            content: {"status": "completed"},
-            status: "completed",
-            generatedBy: "system",
-            generatedAt: timestamp,
-            createdAt: timestamp,
-            updatedAt: timestamp
-        };
-    }
+        stream<LabResultRecord, sql:Error?> resultStream = dbClient->query(`
+            SELECT * FROM lab_result WHERE status = ${status} ORDER BY created_at DESC
+        `);
 
-    # Get reports by sample
-    # + sampleId - Sample ID
-    # + return - Array of reports
-    public function getReportsBySample(string sampleId) returns LabReport[]|error {
-        return [];
-    }
+        FullLabResult[] results = [];
+        check from LabResultRecord labResultRecord in resultStream
+            do {
+                results.push(self.convertToFullLabResult(labResultRecord));
+            };
 
-    # Finalize report
-    # + reportId - Report ID
-    # + finalizedBy - Finalized by
-    # + return - Finalized report
-    public function finalizeReport(string reportId, string finalizedBy) returns LabReport|error {
-        string timestamp = time:utcToString(time:utcNow());
-        return {
-            id: reportId,
-            sampleId: "1",
-            content: {"status": "finalized"},
-            status: "finalized",
-            generatedBy: "system",
-            generatedAt: timestamp,
-            finalizedBy: finalizedBy,
-            finalizedAt: timestamp,
-            createdAt: timestamp,
-            updatedAt: timestamp
-        };
+        check resultStream.close();
+        return results;
     }
 
     # Convert database record to full lab result
@@ -241,17 +225,17 @@ public class LabResultService {
         json extractedData = {};
         string timestamp = time:utcToString(time:utcNow());
 
-        // Parse extractedData if it exists
-        if dbRecord.extractedData is string {
-            json|error parsedData = (<string>dbRecord.extractedData).fromJsonString();
+        // Parse extracted_data if it exists
+        if dbRecord.extracted_data is string {
+            json|error parsedData = (<string>dbRecord.extracted_data).fromJsonString();
             if parsedData is json {
                 extractedData = parsedData;
             }
         }
 
         string createdAtStr = timestamp;
-        if dbRecord.createdAt is time:Civil {
-            time:Utc|time:Error utcResult = time:utcFromCivil(<time:Civil>dbRecord.createdAt);
+        if dbRecord.created_at is time:Civil {
+            time:Utc|time:Error utcResult = time:utcFromCivil(<time:Civil>dbRecord.created_at);
             if utcResult is time:Utc {
                 createdAtStr = time:utcToString(utcResult);
             }
@@ -259,12 +243,31 @@ public class LabResultService {
 
         return {
             id: dbRecord.id is int ? dbRecord.id.toString() : "",
-            sampleId: dbRecord.labSampleId.toString(),
-            testTypeId: "1", // Default test type ID
-            status: dbRecord.status,
+            sampleId: dbRecord.lab_sample_id.toString(),
+            status: dbRecord.status ?: "unknown",
             results: extractedData,
+            reportUrl: dbRecord.report_url ?: "",
+            reviewedBy: "",
+            reviewNotes: "",
             createdAt: createdAtStr,
             updatedAt: createdAtStr
+        };
+    }
+
+    # Generate mock analysis (placeholder)
+    # + resultData - Result data
+    # + return - Analysis results
+    public function generateAnalysis(json resultData) returns json {
+        return {
+            "status": "completed",
+            "analysis": {
+                "findings": [
+                    "All values within normal range",
+                    "No abnormal patterns detected"
+                ],
+                "flaggedValues": [],
+                "recommendations": []
+            }
         };
     }
 
@@ -292,7 +295,7 @@ public class LabResultService {
             "pendingReview": pendingReview,
             "reviewed": reviewed,
             "flagged": flagged,
-            "totalReports": 0,
+            "totalReports": 0, // Reports not implemented in DB yet
             "timestamp": time:utcToString(time:utcNow())
         };
     }
