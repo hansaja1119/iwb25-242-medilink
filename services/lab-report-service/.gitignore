@@ -27,6 +27,7 @@ Thumbs.db
 
 # Upload files
 uploads/
+temp_uploads/
 
 # Database files
 *.db

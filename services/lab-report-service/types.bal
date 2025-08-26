@@ -343,7 +343,7 @@ public type FullWorkflowStatus record {
 # Report processing request
 public type ReportProcessRequest record {
     string reportFilePath;
-    string? processedBy?;
+    string? processedBy;
 };
 
 # Report processing response
@@ -354,7 +354,7 @@ public type ReportProcessResponse record {
     json extractedData;
     string status;
     string processedAt;
-    string? processedBy?;
+    string? processedBy;
 };
 
 # Lab result creation record

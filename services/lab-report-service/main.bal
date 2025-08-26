@@ -1,5 +1,8 @@
+import ballerina/file;
 import ballerina/http;
+import ballerina/io;
 import ballerina/log;
+import ballerina/mime;
 import ballerina/time;
 
 // Configuration
@@ -256,8 +259,60 @@ service / on new http:Listener(servicePort) {
     }
 
     # Process lab report for a sample
-    resource function post workflows/samples/[string sampleId]/process\-report(@http:Payload ReportProcessRequest request) returns ReportProcessResponse|error {
-        return reportProcessingService.processReport(sampleId, request);
+    resource function post workflows/samples/[string sampleId]/process\-report(http:Request request) returns ReportProcessResponse|error {
+        log:printInfo(string `Processing report request for sample ID: ${sampleId}`);
+
+        // Parse multipart form data
+        mime:Entity[] bodyParts = check request.getBodyParts();
+
+        string? reportFilePath = ();
+        string? processedBy = ();
+
+        // Process each part of the multipart request
+        foreach mime:Entity part in bodyParts {
+            mime:ContentDisposition contentDisposition = part.getContentDisposition();
+            string fieldName = contentDisposition.name;
+
+            if fieldName == "reportFilePath" {
+                // This is the file upload
+                string contentType = part.getContentType();
+                if contentType.startsWith("image/") || contentType.startsWith("application/pdf") {
+                    // Save the uploaded file temporarily
+                    byte[] fileContent = check part.getByteArray();
+                    string tempDir = "temp_uploads";
+                    string? fileName = contentDisposition.fileName;
+                    string actualFileName = fileName is string ? fileName : string `report_${sampleId}_${time:utcNow()[0]}.pdf`;
+                    string tempFilePath = string `${tempDir}/${actualFileName}`;
+
+                    // Create temp directory if it doesn't exist
+                    error? createDirResult = file:createDir(tempDir, file:RECURSIVE);
+                    if createDirResult is error && !createDirResult.message().includes("File already exists") {
+                        return error(string `Failed to create directory: ${createDirResult.message()}`);
+                    }
+
+                    // Write file to temp location
+                    check io:fileWriteBytes(tempFilePath, fileContent);
+                    reportFilePath = tempFilePath;
+                    log:printInfo(string `File saved to: ${tempFilePath}`);
+                } else {
+                    return error(string `Invalid file type: ${contentType}. Only images and PDFs are supported.`);
+                }
+            } else if fieldName == "processedBy" {
+                processedBy = check part.getText();
+            }
+        }
+
+        if reportFilePath is () {
+            return error("No file uploaded. Please provide a file in the 'reportFilePath' field.");
+        }
+
+        // Create request object with the file path
+        ReportProcessRequest reportRequest = {
+            reportFilePath: reportFilePath,
+            processedBy: processedBy
+        };
+
+        return reportProcessingService.processReport(sampleId, reportRequest);
     }
 
     # Get report processing statistics
