@@ -241,11 +241,42 @@ public class LabResultService {
         json extractedData = {};
         string timestamp = time:utcToString(time:utcNow());
 
-        // Parse extractedData if it exists
+        // Parse and decrypt extractedData if it exists
         if dbRecord.extractedData is string {
-            json|error parsedData = (<string>dbRecord.extractedData).fromJsonString();
-            if parsedData is json {
-                extractedData = parsedData;
+            string dataString = <string>dbRecord.extractedData;
+
+            // Get encryption service
+            EncryptionService|error encryptionServiceResult = getEncryptionService();
+            if encryptionServiceResult is EncryptionService {
+                // Check if data is encrypted
+                if encryptionServiceResult.isEncrypted(dataString) {
+                    // Decrypt the data
+                    json|error decryptedData = encryptionServiceResult.decryptData(dataString);
+                    if decryptedData is json {
+                        extractedData = decryptedData;
+                        log:printInfo("Lab result data decrypted successfully for ID: " + (dbRecord.id is int ? dbRecord.id.toString() : "unknown"));
+                    } else {
+                        log:printError("Failed to decrypt lab result data", decryptedData);
+                        // Fall back to trying to parse as plain JSON
+                        json|error parsedData = dataString.fromJsonString();
+                        if parsedData is json {
+                            extractedData = parsedData;
+                        }
+                    }
+                } else {
+                    // Try to parse as plain JSON (legacy data)
+                    json|error parsedData = dataString.fromJsonString();
+                    if parsedData is json {
+                        extractedData = parsedData;
+                    }
+                }
+            } else {
+                log:printError("Failed to get encryption service", encryptionServiceResult);
+                // Fall back to parsing as plain JSON
+                json|error parsedData = dataString.fromJsonString();
+                if parsedData is json {
+                    extractedData = parsedData;
+                }
             }
         }
 
