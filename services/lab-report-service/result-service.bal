@@ -244,30 +244,42 @@ public class LabResultService {
         // Parse and decrypt extractedData if it exists
         if dbRecord.extractedData is string {
             string dataString = <string>dbRecord.extractedData;
+            
+            log:printInfo("Processing extracted data for result ID: " + (dbRecord.id is int ? dbRecord.id.toString() : "unknown"));
+            log:printInfo("Data string length: " + dataString.length().toString());
+            log:printInfo("Data string preview: " + (dataString.length() > 100 ? dataString.substring(0, 100) + "..." : dataString));
 
             // Get encryption service
             EncryptionService|error encryptionServiceResult = getEncryptionService();
             if encryptionServiceResult is EncryptionService {
                 // Check if data is encrypted
-                if encryptionServiceResult.isEncrypted(dataString) {
+                boolean isEncryptedData = encryptionServiceResult.isEncrypted(dataString);
+                log:printInfo("Is data encrypted: " + isEncryptedData.toString());
+                
+                if isEncryptedData {
                     // Decrypt the data
+                    log:printInfo("Attempting to decrypt data...");
                     json|error decryptedData = encryptionServiceResult.decryptData(dataString);
                     if decryptedData is json {
                         extractedData = decryptedData;
                         log:printInfo("Lab result data decrypted successfully for ID: " + (dbRecord.id is int ? dbRecord.id.toString() : "unknown"));
+                        log:printInfo("Decrypted data preview: " + extractedData.toString().substring(0, 200) + "...");
                     } else {
                         log:printError("Failed to decrypt lab result data", decryptedData);
                         // Fall back to trying to parse as plain JSON
                         json|error parsedData = dataString.fromJsonString();
                         if parsedData is json {
                             extractedData = parsedData;
+                            log:printInfo("Used fallback JSON parsing for legacy data");
                         }
                     }
                 } else {
+                    log:printInfo("Data is not encrypted, parsing as plain JSON");
                     // Try to parse as plain JSON (legacy data)
                     json|error parsedData = dataString.fromJsonString();
                     if parsedData is json {
                         extractedData = parsedData;
+                        log:printInfo("Successfully parsed as plain JSON");
                     }
                 }
             } else {
