@@ -1,0 +1,1023 @@
+{
+	"info": {
+		"_postman_id": "lab-report-service-collection",
+		"name": "Lab Report Service API",
+		"description": "Complete API collection for MediLink Lab Report Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3004",
+			"type": "string"
+		},
+		{
+			"key": "sampleId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "resultId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "reportId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "templateId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "workflowId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Service Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Test Types",
+			"item": [
+				{
+					"name": "Get All Test Types",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/testtypes",
+							"host": ["{{baseUrl}}"],
+							"path": ["testtypes"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Test Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"value\": \"CBC\",\n    \"label\": \"Complete Blood Count\",\n    \"category\": \"Hematology\",\n    \"parserClass\": \"CBCParser\",\n    \"parserModule\": \"hematology\",\n    \"reportFields\": {\n        \"rbc\": \"Red Blood Cells\",\n        \"wbc\": \"White Blood Cells\",\n        \"platelets\": \"Platelets\",\n        \"hemoglobin\": \"Hemoglobin\"\n    },\n    \"referenceRanges\": {\n        \"rbc\": {\"min\": 4.5, \"max\": 5.5, \"unit\": \"million/μL\"},\n        \"wbc\": {\"min\": 4000, \"max\": 11000, \"unit\": \"cells/μL\"},\n        \"platelets\": {\"min\": 150000, \"max\": 450000, \"unit\": \"cells/μL\"}\n    },\n    \"basicFields\": {\n        \"sampleType\": \"blood\",\n        \"container\": \"EDTA tube\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/testtypes",
+							"host": ["{{baseUrl}}"],
+							"path": ["testtypes"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Test Type",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"value\": \"CBC_UPDATED\",\n    \"label\": \"Complete Blood Count - Updated\",\n    \"category\": \"Hematology\",\n    \"parserClass\": \"CBCParserV2\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/testtypes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["testtypes", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Test Type",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/testtypes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["testtypes", "1"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab Samples",
+			"item": [
+				{
+					"name": "Get All Samples",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Lab Sample",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.id) {",
+									"        pm.collectionVariables.set('sampleId', response.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"labId\": \"LAB001\",\n    \"barcode\": \"BC123456789\",\n    \"testTypeId\": 1,\n    \"patientId\": \"patient123\",\n    \"physicianId\": \"doc001\",\n    \"status\": \"pending\",\n    \"metadata\": {\n        \"priority\": \"normal\",\n        \"notes\": \"Patient fasting for 12 hours\",\n        \"collectedBy\": \"nurse001\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/samples",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sample by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples/{{sampleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "{{sampleId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Samples by Patient",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples/patient/patient123",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "patient", "patient123"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Samples by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples/status/pending",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "status", "pending"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Sample Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"processing\",\n    \"notes\": \"Sample received in lab\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/samples/{{sampleId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "{{sampleId}}", "status"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Process Sample",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"processedBy\": \"lab_tech001\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/samples/{{sampleId}}/process",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "{{sampleId}}", "process"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Sample with Results",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sampleId\": \"{{sampleId}}\",\n    \"testTypeId\": \"1\",\n    \"results\": {\n        \"rbc\": 4.8,\n        \"wbc\": 7500,\n        \"platelets\": 250000,\n        \"hemoglobin\": 14.2\n    },\n    \"normalRanges\": {\n        \"rbc\": {\"min\": 4.5, \"max\": 5.5},\n        \"wbc\": {\"min\": 4000, \"max\": 11000},\n        \"platelets\": {\"min\": 150000, \"max\": 450000}\n    },\n    \"resultDate\": \"2025-08-17T14:30:00Z\",\n    \"resultValue\": \"Normal values within reference ranges\",\n    \"reviewedBy\": \"doctor001\",\n    \"notes\": \"All parameters within normal limits\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/samples/{{sampleId}}/complete",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "{{sampleId}}", "complete"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sample with Results",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples/{{sampleId}}/results",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "{{sampleId}}", "results"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sample Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "stats"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Sample",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples/{{sampleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "{{sampleId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab Results",
+			"item": [
+				{
+					"name": "Get All Results",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results",
+							"host": ["{{baseUrl}}"],
+							"path": ["results"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Lab Result",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.id) {",
+									"        pm.collectionVariables.set('resultId', response.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"labSampleId\": 1,\n    \"reportUrl\": \"https://reports.medilink.com/result123\",\n    \"extractedData\": {\n        \"rbc\": 4.8,\n        \"wbc\": 7500,\n        \"platelets\": 250000,\n        \"hemoglobin\": 14.2\n    },\n    \"status\": \"completed\",\n    \"reviewNotes\": \"All parameters within normal limits\",\n    \"isAnomaly\": false,\n    \"confidenceScore\": 0.95\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/results",
+							"host": ["{{baseUrl}}"],
+							"path": ["results"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Result by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/{{resultId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["results", "{{resultId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Results by Sample",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/sample/{{sampleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["results", "sample", "{{sampleId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Results by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/status/completed",
+							"host": ["{{baseUrl}}"],
+							"path": ["results", "status", "completed"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Result",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reviewNotes\": \"Updated analysis notes - confirmed normal\",\n    \"status\": \"reviewed\",\n    \"confidenceScore\": 0.98\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/results/{{resultId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["results", "{{resultId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Review Result",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reviewedBy\": \"senior_doctor001\",\n    \"notes\": \"Reviewed and approved - all normal values\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/results/{{resultId}}/review",
+							"host": ["{{baseUrl}}"],
+							"path": ["results", "{{resultId}}", "review"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Result Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["results", "stats"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab Reports",
+			"item": [
+				{
+					"name": "Get All Reports",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reports",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Report",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.id) {",
+									"        pm.collectionVariables.set('reportId', response.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sampleId\": \"{{sampleId}}\",\n    \"templateId\": \"{{templateId}}\",\n    \"generatedBy\": \"doctor001\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reports/generate",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "generate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Report by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reports/{{reportId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "{{reportId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Reports by Sample",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reports/sample/{{sampleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "sample", "{{sampleId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Finalize Report",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"finalizedBy\": \"chief_doctor001\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reports/{{reportId}}/finalize",
+							"host": ["{{baseUrl}}"],
+							"path": ["reports", "{{reportId}}", "finalize"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Templates",
+			"item": [
+				{
+					"name": "Get All Templates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Templates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates", "active"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Template",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.id) {",
+									"        pm.collectionVariables.set('templateId', response.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Blood Test Report Template\",\n    \"description\": \"Standard template for blood test reports\",\n    \"testTypeId\": \"1\",\n    \"sections\": [\n        {\n            \"id\": \"header\",\n            \"name\": \"Patient Information\",\n            \"sectionType\": \"header\",\n            \"orderIndex\": 1,\n            \"content\": {\n                \"title\": \"Laboratory Report\",\n                \"logo\": \"medilink_logo.png\"\n            }\n        },\n        {\n            \"id\": \"results\",\n            \"name\": \"Test Results\",\n            \"sectionType\": \"test_results\",\n            \"orderIndex\": 2,\n            \"content\": {\n                \"showNormalRanges\": true,\n                \"highlightAbnormal\": true\n            }\n        },\n        {\n            \"id\": \"conclusion\",\n            \"name\": \"Medical Opinion\",\n            \"sectionType\": \"interpretation\",\n            \"orderIndex\": 3,\n            \"content\": {\n                \"includeRecommendations\": true\n            }\n        }\n    ],\n    \"isActive\": true,\n    \"createdBy\": \"doctor001\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/templates",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Template by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates/{{templateId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates", "{{templateId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Templates by Test Type",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates/testtype/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates", "testtype", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Template",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Blood Test Report Template\",\n    \"description\": \"Updated standard template for blood test reports\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/templates/{{templateId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates", "{{templateId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Template",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates/{{templateId}}/activate",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates", "{{templateId}}", "activate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Template",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates/{{templateId}}/deactivate",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates", "{{templateId}}", "deactivate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Report from Template",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"resultData\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/templates/{{templateId}}/generate",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates", "{{templateId}}", "generate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Template Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates", "stats"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Workflows",
+			"item": [
+				{
+					"name": "Get Active Workflows",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/workflows/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["workflows", "active"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Workflow by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/workflows/{{workflowId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["workflows", "{{workflowId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Process Next Workflow Step",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/workflows/{{workflowId}}/process",
+							"host": ["{{baseUrl}}"],
+							"path": ["workflows", "{{workflowId}}", "process"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Workflow Step",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"result\": \"Step completed successfully\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/workflows/{{workflowId}}/step/0/complete",
+							"host": ["{{baseUrl}}"],
+							"path": ["workflows", "{{workflowId}}", "step", "0", "complete"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Workflow Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/workflows/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["workflows", "stats"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Legacy Workflow Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/workflow",
+							"host": ["{{baseUrl}}"],
+							"path": ["workflow"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Testing Flow",
+			"item": [
+				{
+					"name": "1. Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Create Test Type for Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"value\": \"CBC_FLOW\",\n    \"label\": \"Complete Blood Count for Testing\",\n    \"category\": \"Hematology\",\n    \"parserClass\": \"CBCParser\",\n    \"reportFields\": {\n        \"rbc\": \"Red Blood Cells\",\n        \"wbc\": \"White Blood Cells\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/testtypes",
+							"host": ["{{baseUrl}}"],
+							"path": ["testtypes"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create Sample for Flow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.id) {",
+									"        pm.collectionVariables.set('sampleId', response.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"labId\": \"LAB_FLOW_001\",\n    \"barcode\": \"BC_FLOW_123\",\n    \"testTypeId\": 1,\n    \"patientId\": \"patient_flow_123\",\n    \"status\": \"pending\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/samples",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get All Samples",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Create Template for Flow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.id) {",
+									"        pm.collectionVariables.set('templateId', response.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"CBC Report Template for Testing\",\n    \"description\": \"Template for CBC reports - Testing Flow\",\n    \"testTypeId\": \"1\",\n    \"sections\": [\n        {\n            \"id\": \"header\",\n            \"name\": \"Report Header\",\n            \"sectionType\": \"header\",\n            \"orderIndex\": 1,\n            \"content\": {\"title\": \"Lab Report\"}\n        }\n    ],\n    \"isActive\": true,\n    \"createdBy\": \"system\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/templates",
+							"host": ["{{baseUrl}}"],
+							"path": ["templates"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get All Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/samples/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["samples", "stats"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
