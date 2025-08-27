@@ -244,7 +244,7 @@ public class LabResultService {
         // Parse and decrypt extractedData if it exists
         if dbRecord.extractedData is string {
             string dataString = <string>dbRecord.extractedData;
-            
+
             log:printInfo("Processing extracted data for result ID: " + (dbRecord.id is int ? dbRecord.id.toString() : "unknown"));
             log:printInfo("Data string length: " + dataString.length().toString());
             log:printInfo("Data string preview: " + (dataString.length() > 100 ? dataString.substring(0, 100) + "..." : dataString));
@@ -255,7 +255,7 @@ public class LabResultService {
                 // Check if data is encrypted
                 boolean isEncryptedData = encryptionServiceResult.isEncrypted(dataString);
                 log:printInfo("Is data encrypted: " + isEncryptedData.toString());
-                
+
                 if isEncryptedData {
                     // Decrypt the data
                     log:printInfo("Attempting to decrypt data...");
