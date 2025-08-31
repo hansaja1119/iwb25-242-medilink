@@ -4,7 +4,7 @@ A comprehensive healthcare management system built with Ballerina, designed to s
 
 ## 🏥 System Overview
 
-MediLink v2 is a microservices-based healthcare platform that provides:
+MediLink is a microservices-based healthcare platform that provides:
 
 - **Laboratory Information Management System (LIMS)**
 - **Patient Data Management**
@@ -147,7 +147,7 @@ Comprehensive laboratory information management system:
 
    ```bash
    git clone https://github.com/hansaja1119/iwb25-242-medilink.git
-   cd MediLink-v2
+   cd MediLink
    ```
 
 2. **Install dependencies**
