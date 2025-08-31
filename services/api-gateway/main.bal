@@ -115,22 +115,6 @@ service /api on new http:Listener(appConfig.app.port, config = {host: appConfig.
         return check forwardToService("user", string `/users/${string:'join("/", ...path)}`, req);
     }
 
-    # Appointment service routes
-    # Base appointments route
-    # + req - HTTP request
-    # + return - HTTP response from appointment service
-    resource function 'default appointments(http:Request req) returns http:Response|error {
-        return check forwardToService("appointment", "/appointments", req);
-    }
-
-    # Appointment service routes with path
-    # + path - Path parameters
-    # + req - HTTP request
-    # + return - HTTP response from appointment service
-    resource function 'default appointments/[string... path](http:Request req) returns http:Response|error {
-        return check forwardToService("appointment", string `/appointments/${string:'join("/", ...path)}`, req);
-    }
-
     # Lab report service routes
     # Base reports route
     # + req - HTTP request
